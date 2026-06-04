@@ -90,6 +90,30 @@ func TestDieRollToggleIsInspektorOnly(t *testing.T) {
 	}
 }
 
+func TestValueModeToggleIsInspektorScoped(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.mode = modeChat
+	updated, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyCtrlL})
+	if !handled {
+		t.Fatal("ctrl+l should still be handled outside Inspektor")
+	}
+	if updated.(model).mode != modeLLMProvider {
+		t.Fatal("ctrl+l outside Inspektor should open LLM config")
+	}
+
+	m = New(config.Default(), "", nil, nil).(model)
+	m.mode = modeChat
+	m.inspektMode = true
+	updated, _, handled = m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyCtrlL})
+	if !handled {
+		t.Fatal("ctrl+l should toggle Inspektor value mode")
+	}
+	next := updated.(model)
+	if next.mode != modeChat || next.inspektValueMode != inspektValueLogprob {
+		t.Fatalf("mode/value = %v/%v, want chat/logprob", next.mode, next.inspektValueMode)
+	}
+}
+
 func TestDieRollStateShowsToggleValue(t *testing.T) {
 	m := New(config.Default(), "", nil, nil).(model)
 	m.inspektMode = true
@@ -101,6 +125,18 @@ func TestDieRollStateShowsToggleValue(t *testing.T) {
 	m.inspektDieRoll = false
 	if state := m.dieRollState(); !strings.Contains(state, "die off") {
 		t.Fatalf("die state = %q, want die off", state)
+	}
+}
+
+func TestInspektValueFormattingTogglesPercentAndLogprob(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	alt := llm.TokenProbability{Token: "red", Probability: 42.1, Logprob: -0.865}
+	if got := m.formatInspektValue(alt); !strings.Contains(got, "42.1%") {
+		t.Fatalf("percent value = %q, want percentage", got)
+	}
+	m.inspektValueMode = inspektValueLogprob
+	if got := m.formatInspektValue(alt); !strings.Contains(got, "-0.86") {
+		t.Fatalf("logprob value = %q, want logprob", got)
 	}
 }
 

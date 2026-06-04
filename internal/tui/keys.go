@@ -67,6 +67,11 @@ func (m model) handleGlobalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 	case "ctrl+l":
+		if m.mode == modeChat && m.inspektMode {
+			m.toggleInspektValueMode()
+			m.renderMessages()
+			return m, nil, true
+		}
 		if m.mode == modeChat && !m.thinking {
 			updated, cmd := m.startLLMConfig()
 			return updated, cmd, true

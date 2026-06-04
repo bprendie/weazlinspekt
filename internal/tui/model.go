@@ -35,6 +35,13 @@ const (
 	modeLLMContext
 )
 
+type inspektValueMode int
+
+const (
+	inspektValuePercent inspektValueMode = iota
+	inspektValueLogprob
+)
+
 type model struct {
 	cfg                 config.Config
 	cfgPath             string
@@ -68,6 +75,7 @@ type model struct {
 	mouseScroll         bool
 	inspektMode         bool
 	inspektDieRoll      bool
+	inspektValueMode    inspektValueMode
 	stream              <-chan streamEvent
 	streamText          string
 	streamAt            time.Time

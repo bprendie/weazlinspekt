@@ -30,6 +30,8 @@ LLMs are heavily fine-tuned to project high confidence. But when you ask a model
 
 The Inspektor pane also renders a `top-k entropy` gauge. Low entropy means the visible alternatives are concentrated around one obvious token. High entropy means the returned alternatives are spread across competing continuations. This is a top-k diagnostic, not a full-vocabulary entropy claim.
 
+Press `ctrl+l` while Inspekt Mode is active to toggle the value column between percentages and raw `logprob` values. The API does not expose true pre-softmax logits, so the UI labels this mode accurately as `logprob`.
+
 Want to analyze a generation closely? Inspekt Mode buffers the token stream into RAM and starts playback at `0.1x` so the stream is readable. Press `'` to cycle playback speed through `0.1x`, `0.5x`, `1.0x`, and step mode. Press `[` to step back one token and `]` to step forward one token. The transcript and Inspektor stay synchronized so the highlighted token and probability chart represent the same model state.
 
 ## Immutable Vault Integration
@@ -172,6 +174,7 @@ Run setup first if you want the guided config flow:
 - `[`: step Inspekt playback back one token
 - `]`: step Inspekt playback forward one token
 - `ctrl+g`: toggle the Inspekt die-roll indicator
+- `ctrl+l`: toggle Inspekt values between `%` and `logprob`; outside Inspekt Mode, open LLM config
 - `ctrl+n`: start a new session
 - `ctrl+r`: open workspace saves
 - `ctrl+d`: delete the selected workspace save from the picker

@@ -102,7 +102,35 @@ func (m model) inspektBar(width int, alt llm.TokenProbability, rank int) string 
 	)
 	marker := m.inspektBarMarker(alt, rank)
 	label := lipgloss.NewStyle().Width(labelWidth).Foreground(ink).Render(trimToWidth(visibleToken(alt.Token), labelWidth))
-	return fmt.Sprintf("%s%s %s %5.1f%%", marker, label, bar, alt.Probability)
+	return fmt.Sprintf("%s%s %s %s", marker, label, bar, m.formatInspektValue(alt))
+}
+
+func (m *model) toggleInspektValueMode() {
+	if m.inspektValueMode == inspektValueLogprob {
+		m.inspektValueMode = inspektValuePercent
+		m.status = "inspekt values percent"
+		return
+	}
+	m.inspektValueMode = inspektValueLogprob
+	m.status = "inspekt values logprob"
+}
+
+func (m model) valueModeState() string {
+	if !m.inspektMode || len(m.inspektFrame.Alternatives) == 0 {
+		return ""
+	}
+	label := "pct"
+	if m.inspektValueMode == inspektValueLogprob {
+		label = "logprob"
+	}
+	return lipgloss.NewStyle().Foreground(crushPurple).Bold(true).Render(label)
+}
+
+func (m model) formatInspektValue(alt llm.TokenProbability) string {
+	if m.inspektValueMode == inspektValueLogprob {
+		return lipgloss.NewStyle().Foreground(ink).Render(fmt.Sprintf("%6.2f", alt.Logprob))
+	}
+	return lipgloss.NewStyle().Foreground(ink).Render(fmt.Sprintf("%5.1f%%", alt.Probability))
 }
 
 func (m model) inspektBarMarker(alt llm.TokenProbability, rank int) string {

@@ -83,6 +83,9 @@ func (m model) inspektView(width, height int) string {
 	if state := m.dieRollState(); state != "" {
 		title += " " + state
 	}
+	if mode := m.valueModeState(); mode != "" {
+		title += " " + mode
+	}
 	if tag := m.dieRollTag(); tag != "" {
 		title += " " + tag
 	}

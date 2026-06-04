@@ -90,6 +90,20 @@ func TestDieRollToggleIsInspektorOnly(t *testing.T) {
 	}
 }
 
+func TestDieRollStateShowsToggleValue(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.inspektMode = true
+	m.playback = newPlaybackState(true)
+	m.inspektDieRoll = true
+	if state := m.dieRollState(); !strings.Contains(state, "die on") {
+		t.Fatalf("die state = %q, want die on", state)
+	}
+	m.inspektDieRoll = false
+	if state := m.dieRollState(); !strings.Contains(state, "die off") {
+		t.Fatalf("die state = %q, want die off", state)
+	}
+}
+
 func TestDieRollRankDetectsNonArgmax(t *testing.T) {
 	frame := llm.LogprobFrame{
 		Token: "Schedule",

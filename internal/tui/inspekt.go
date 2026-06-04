@@ -80,6 +80,9 @@ func (m model) inspektView(width, height int) string {
 	if legend := m.inspektPlaybackLegend(); legend != "" {
 		title += " " + legend
 	}
+	if state := m.dieRollState(); state != "" {
+		title += " " + state
+	}
 	if tag := m.dieRollTag(); tag != "" {
 		title += " " + tag
 	}
@@ -131,6 +134,19 @@ func (m model) dieRollTag() string {
 		Bold(true).
 		Padding(0, 1).
 		Render("DIE ROLL")
+}
+
+func (m model) dieRollState() string {
+	if !m.inspektMode || !m.playback.enabled {
+		return ""
+	}
+	label := "die off"
+	style := lipgloss.NewStyle().Foreground(muted)
+	if m.inspektDieRoll {
+		label = "die on"
+		style = lipgloss.NewStyle().Foreground(crushPink).Bold(true)
+	}
+	return style.Render(label)
 }
 
 func (m model) showDieRoll(width int) bool {

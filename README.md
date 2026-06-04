@@ -1,6 +1,6 @@
 # WeazlInspekt
 
-WeazlInspekt is a private, local-first AI chat TUI with a real-time logit inspector for vLLM and Ollama servers. It keeps the zero-bloat terminal workflow, but adds an Engine Room split view that exposes token probabilities as the model generates text. No wisdom theater, no web wrappers, just your model and its probability distribution.
+WeazlInspekt is a private, local-first AI chat TUI with a real-time logit inspector for vLLM and Ollama servers. It keeps the zero-bloat terminal workflow, but adds an Inspektor split view that exposes token probabilities as the model generates text. No wisdom theater, no web wrappers, just your model and its probability distribution.
 
 ## Defaults
 
@@ -139,7 +139,7 @@ Run setup first if you want the guided config flow:
 Press `ctrl+i` in chat to split the TUI into two panes:
 
 - Left pane, the Simulacrum: the normal message thread with Markdown rendered through Glamour.
-- Right pane, the Engine Room: the current generated token plus a top-5 probability bar chart.
+- Right pane, the Inspektor: the current generated token plus a top-5 probability bar chart.
 
 For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `top_logprobs: 5` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
 

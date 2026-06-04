@@ -58,7 +58,7 @@ func highEntropySplit(frame llm.LogprobFrame) (inspektSplit, bool) {
 }
 
 func (m model) inspektView(width, height int) string {
-	title := m.styles.roleTool.Render("engine room")
+	title := m.styles.roleTool.Render("inspektor")
 	token := m.styles.statusLabel.Render("token") + " " + m.styles.statusValue.Render(visibleToken(m.inspektFrame.Token))
 	if len(m.inspektFrame.Alternatives) == 0 {
 		token = m.styles.help.Render("waiting for logprobs")
@@ -84,7 +84,11 @@ func (m model) inspektBar(width int, alt llm.TokenProbability) string {
 	barWidth := max(4, width-labelWidth-9)
 	fill := int((alt.Probability / 100) * float64(barWidth))
 	fill = min(barWidth, max(0, fill))
-	bar := m.styles.assistant.Render(strings.Repeat("#", fill)) + m.styles.help.Render(strings.Repeat("-", barWidth-fill))
+	bar := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().Background(crushMint).Render(strings.Repeat(" ", fill)),
+		lipgloss.NewStyle().Background(border).Render(strings.Repeat(" ", barWidth-fill)),
+	)
 	label := lipgloss.NewStyle().Width(labelWidth).Foreground(ink).Render(trimToWidth(visibleToken(alt.Token), labelWidth))
 	return fmt.Sprintf("%s %s %5.1f%%", label, bar, alt.Probability)
 }

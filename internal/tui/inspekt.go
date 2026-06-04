@@ -18,6 +18,12 @@ type inspektSplit struct {
 	Alternatives []llm.TokenProbability `json:"alternatives"`
 }
 
+type weazlArtLine struct {
+	text      string
+	row       int
+	colOffset int
+}
+
 func (m model) toggleInspektMode() (model, tea.Cmd) {
 	m.inspektMode = !m.inspektMode
 	m.resize()
@@ -108,36 +114,40 @@ func (m model) withInspektWeazl(lines []string, width, height int) string {
 		lines = append(lines, "")
 	}
 	for _, line := range art {
-		lines = append(lines, lipgloss.NewStyle().Width(width).Align(lipgloss.Right).Render(colorWeazlLine(line)))
+		rendered := colorWeazlLine(line.text, line.row, line.colOffset)
+		lines = append(lines, lipgloss.NewStyle().Width(width).Align(lipgloss.Right).Render(rendered))
 	}
 	return strings.Join(lines, "\n")
 }
 
-func clippedWeazl(width, height int) []string {
+func clippedWeazl(width, height int) []weazlArtLine {
 	source := strings.Split(inspektWeazlArt, "\n")
+	rowOffset := 0
 	if len(source) > height {
+		rowOffset = len(source) - height
 		source = source[len(source)-height:]
 	}
-	out := make([]string, 0, len(source))
-	for _, line := range source {
+	out := make([]weazlArtLine, 0, len(source))
+	for i, line := range source {
 		line = strings.TrimRight(line, " ")
+		colOffset := 0
 		if lipgloss.Width(line) > width {
-			line = rightRunes(line, width)
+			line, colOffset = rightRunes(line, width)
 		}
-		out = append(out, line)
+		out = append(out, weazlArtLine{text: line, row: rowOffset + i, colOffset: colOffset})
 	}
 	return out
 }
 
-func colorWeazlLine(line string) string {
+func colorWeazlLine(line string, row, colOffset int) string {
 	var b strings.Builder
-	for _, r := range line {
-		b.WriteString(weazlRuneStyle(r).Render(string(r)))
+	for col, r := range []rune(line) {
+		b.WriteString(weazlCellStyle(row, colOffset+col, r).Render(string(r)))
 	}
 	return b.String()
 }
 
-func weazlRuneStyle(r rune) lipgloss.Style {
+func fallbackWeazlRuneStyle(r rune) lipgloss.Style {
 	switch r {
 	case '█', '▌':
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("235"))
@@ -158,12 +168,14 @@ func weazlRuneStyle(r rune) lipgloss.Style {
 	}
 }
 
-func rightRunes(s string, width int) string {
+func rightRunes(s string, width int) (string, int) {
 	r := []rune(s)
+	removed := 0
 	for len(r) > 0 && lipgloss.Width(string(r)) > width {
 		r = r[1:]
+		removed++
 	}
-	return string(r)
+	return string(r), removed
 }
 
 func visibleToken(s string) string {

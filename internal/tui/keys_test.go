@@ -39,18 +39,21 @@ func TestWeazlArtKeepsSizeAndColorizes(t *testing.T) {
 	if len(clipped) != len(source) {
 		t.Fatalf("clipped height = %d, want %d", len(clipped), len(source))
 	}
-	if lipgloss.Width(clipped[0]) != lipgloss.Width(source[0]) {
-		t.Fatalf("clipped width = %d, want %d", lipgloss.Width(clipped[0]), lipgloss.Width(source[0]))
+	if lipgloss.Width(clipped[0].text) != lipgloss.Width(source[0]) {
+		t.Fatalf("clipped width = %d, want %d", lipgloss.Width(clipped[0].text), lipgloss.Width(source[0]))
 	}
 
-	if weazlRuneStyle('▓').GetForeground() == weazlRuneStyle('▒').GetForeground() {
+	if fallbackWeazlRuneStyle('▓').GetForeground() == fallbackWeazlRuneStyle('▒').GetForeground() {
 		t.Fatal("density glyphs should use distinct colors")
 	}
-	if weazlRuneStyle('█').GetForeground() != lipgloss.Color("235") {
+	if fallbackWeazlRuneStyle('█').GetForeground() != lipgloss.Color("235") {
 		t.Fatal("solid block should use ANSI 256-color palette index 235")
 	}
-	colored := colorWeazlLine("█▓▒░╣▀M")
+	colored := colorWeazlLine("█▓▒░╣▀M", 0, 0)
 	if lipgloss.Width(colored) != 7 {
 		t.Fatalf("colored width = %d, want 7", lipgloss.Width(colored))
+	}
+	if weazlCellStyle(0, 0, '█').GetForeground() == fallbackWeazlRuneStyle('█').GetForeground() {
+		t.Fatal("PNG palette should override fallback glyph colors")
 	}
 }

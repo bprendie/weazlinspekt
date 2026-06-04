@@ -12,8 +12,18 @@ import (
 const markdownResponseSystemPrompt = "Format normal responses as Markdown so headings, lists, code blocks, quotes, links, and tables render cleanly in the terminal. If the user explicitly requests a different raw format such as JSON, Python, SQL, CSV, or plain text, honor that requested format exactly."
 
 func chatMessages(history []storage.Message, prompt string) []ChatMessage {
+	return chatMessagesWithSystem(history, prompt, true)
+}
+
+func rawChatMessages(history []storage.Message, prompt string) []ChatMessage {
+	return chatMessagesWithSystem(history, prompt, false)
+}
+
+func chatMessagesWithSystem(history []storage.Message, prompt string, includeSystem bool) []ChatMessage {
 	messages := make([]ChatMessage, 0, len(history)+2)
-	messages = append(messages, ChatMessage{Role: "system", Content: systemPrompt()})
+	if includeSystem {
+		messages = append(messages, ChatMessage{Role: "system", Content: systemPrompt()})
+	}
 	for _, msg := range history {
 		cm := ChatMessage{Role: msg.Role, Content: msg.Content}
 		if msg.Role == "assistant" && msg.ToolCalls != "" {
@@ -51,8 +61,18 @@ type ollamaToolCall struct {
 }
 
 func ollamaChatMessages(history []storage.Message, prompt string) []ollamaMessage {
+	return ollamaChatMessagesWithSystem(history, prompt, true)
+}
+
+func rawOllamaChatMessages(history []storage.Message, prompt string) []ollamaMessage {
+	return ollamaChatMessagesWithSystem(history, prompt, false)
+}
+
+func ollamaChatMessagesWithSystem(history []storage.Message, prompt string, includeSystem bool) []ollamaMessage {
 	messages := make([]ollamaMessage, 0, len(history)+2)
-	messages = append(messages, ollamaMessage{Role: "system", Content: systemPrompt()})
+	if includeSystem {
+		messages = append(messages, ollamaMessage{Role: "system", Content: systemPrompt()})
+	}
 	toolNames := make(map[string]string)
 	for _, msg := range history {
 		cm := ollamaMessage{Role: msg.Role, Content: msg.Content}

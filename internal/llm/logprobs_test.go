@@ -73,4 +73,7 @@ func TestOpenAIStreamRequestsTopSixLogprobs(t *testing.T) {
 	if got := requestBody["top_logprobs"]; got != float64(topLogprobs) {
 		t.Fatalf("top_logprobs = %#v, want %d", got, topLogprobs)
 	}
+	if got := requestBody["top_p"]; got != float64(1) {
+		t.Fatalf("top_p = %#v, want 1.0", got)
+	}
 }

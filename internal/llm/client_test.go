@@ -52,6 +52,17 @@ func TestChatMessagesAppendsNonEmptyPrompt(t *testing.T) {
 	}
 }
 
+func TestRawChatMessagesSkipSystemPrompt(t *testing.T) {
+	messages := rawChatMessages(nil, "hello")
+
+	if len(messages) != 1 {
+		t.Fatalf("message count = %d, want 1", len(messages))
+	}
+	if messages[0].Role != "user" || messages[0].Content != "hello" {
+		t.Fatalf("message = %#v, want raw user hello", messages[0])
+	}
+}
+
 func TestOllamaChatMessagesUseToolNameAndObjectArguments(t *testing.T) {
 	history := []storage.Message{
 		{Role: "assistant", ToolCalls: `[{"id":"call_1","type":"function","function":{"name":"calculate","arguments":"{\"operation\":\"add\",\"a\":1,\"b\":2}"}}]`},
@@ -81,5 +92,16 @@ func TestOllamaChatMessagesUseToolNameAndObjectArguments(t *testing.T) {
 	}
 	if messages[2].Role != "tool" || messages[2].ToolName != "calculate" || messages[2].Content != "1 + 2 = 3" {
 		t.Fatalf("tool result was not converted for Ollama: %#v", messages[2])
+	}
+}
+
+func TestRawOllamaChatMessagesSkipSystemPrompt(t *testing.T) {
+	messages := rawOllamaChatMessages(nil, "hello")
+
+	if len(messages) != 1 {
+		t.Fatalf("message count = %d, want 1", len(messages))
+	}
+	if messages[0].Role != "user" || messages[0].Content != "hello" {
+		t.Fatalf("message = %#v, want raw user hello", messages[0])
 	}
 }

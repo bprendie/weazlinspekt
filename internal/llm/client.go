@@ -41,3 +41,16 @@ func (c Client) Stream(ctx context.Context, history []storage.Message, prompt st
 		return Usage{}, fmt.Errorf("unsupported provider type %q", c.provider.Type)
 	}
 }
+
+func (c Client) StreamRaw(ctx context.Context, history []storage.Message, prompt string, onEvent func(StreamEvent)) (Usage, error) {
+	switch strings.ToLower(c.provider.Type) {
+	case "vllm":
+		messages := rawChatMessages(history, prompt)
+		return c.streamOpenAICompat(ctx, messages, onEvent)
+	case "ollama":
+		messages := rawOllamaChatMessages(history, prompt)
+		return c.streamOllama(ctx, messages, onEvent)
+	default:
+		return Usage{}, fmt.Errorf("unsupported provider type %q", c.provider.Type)
+	}
+}

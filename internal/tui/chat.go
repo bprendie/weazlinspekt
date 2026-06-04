@@ -99,13 +99,16 @@ func (m model) handleEnter() (tea.Model, tea.Cmd) {
 		m.messages = history
 		m.renderMessages()
 		currentPromptID := history[len(history)-1].ID
-		if m.shouldAutoTrim(history) {
+		contextHistory := []storage.Message(nil)
+		if m.shouldTrimForPrompt(history) {
 			return m.trimContext(true, prompt, currentPromptID, history[len(history)-2].ID)
 		}
-		contextHistory, err := m.contextHistoryForPrompt(currentPromptID)
-		if err != nil {
-			m.err = err.Error()
-			return m, nil
+		if !m.inspektMode {
+			contextHistory, err = m.contextHistoryForPrompt(currentPromptID)
+			if err != nil {
+				m.err = err.Error()
+				return m, nil
+			}
 		}
 		m.thinking = true
 		m.working.Spinner = spinner.Jump
@@ -118,6 +121,9 @@ func (m model) handleEnter() (tea.Model, tea.Cmd) {
 		m.reqOut = 0
 		m.err = ""
 		m.status = "streaming"
+		if m.inspektMode {
+			m.status = "streaming stateless"
+		}
 		ch := make(chan streamEvent, 64)
 		m.stream = ch
 		return m, tea.Batch(m.startStream(ch, prompt, contextHistory), waitStream(ch), m.working.Tick, m.playbackInitialCmd())

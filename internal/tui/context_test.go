@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bprendie/weazlinspekt/internal/config"
 	"github.com/bprendie/weazlinspekt/internal/storage"
 )
 
@@ -51,5 +52,22 @@ func TestEstimateMessagesIncludesToolCalls(t *testing.T) {
 	}
 	if got := estimateMessages(messages); got == 0 {
 		t.Fatal("estimateMessages = 0, want tool call metadata counted")
+	}
+}
+
+func TestInspektModeSkipsPromptTrim(t *testing.T) {
+	history := []storage.Message{
+		{Role: "user", Content: strings.Repeat("token ", 9000)},
+		{Role: "assistant", Content: strings.Repeat("token ", 9000)},
+	}
+	cfg := config.Default()
+	cfg.Providers[cfg.ActiveProvider] = config.Provider{ContextWindow: 8192}
+	normal := model{cfg: cfg}
+	if !normal.shouldTrimForPrompt(history) {
+		t.Fatal("normal chat should trim oversized history")
+	}
+	inspekt := model{cfg: cfg, inspektMode: true}
+	if inspekt.shouldTrimForPrompt(history) {
+		t.Fatal("Inspektor mode should skip context trimming")
 	}
 }

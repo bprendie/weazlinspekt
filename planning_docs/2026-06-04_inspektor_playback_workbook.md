@@ -32,6 +32,8 @@ Decision: playback controls are active only when Inspektor mode is active. Outsi
 
 Decision: active playback rendering must skip Glamour Markdown. Glamour is appropriate for normal stored assistant responses, but it strips or rearranges the Lipgloss formatting used for active-token and hesitation evidence.
 
+Decision: Inspektor mode sends stateless prompts. The app still stores the local user message in the session transcript, but the provider request should include only the current prompt and no prior chat context, checkpoints, or auto-trim summaries. This prevents earlier responses from poisoning the demo prompt and making the model appear more deterministic than it is.
+
 ## Behavioral Model
 
 Today, WeazlInspekt streams provider chunks directly into `streamText` and updates the current logprob frame as events arrive. The proposed model separates capture from presentation:

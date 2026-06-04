@@ -138,6 +138,13 @@ func (m model) shouldAutoTrim(history []storage.Message) bool {
 	return m.contextTokenEstimateFor(history) >= autoCompactThreshold(m.contextBudget())
 }
 
+func (m model) shouldTrimForPrompt(history []storage.Message) bool {
+	if m.inspektMode {
+		return false
+	}
+	return m.shouldAutoTrim(history)
+}
+
 func (m model) contextTokenEstimate() int {
 	return m.contextTokenEstimateFor(m.messages)
 }

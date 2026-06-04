@@ -193,6 +193,36 @@ Impact:
 - The audience does not have to read every percentage.
 - A single bar can show when the model is mechanically uncertain.
 
+### Entropy Trace / Probability Momentum
+
+Decision candidate: add a tiny cursor-synced entropy trace below the current entropy gauge.
+
+Purpose:
+
+- The current gauge shows uncertainty for the active token.
+- The trace shows the recent shape of uncertainty over the last few tokens.
+- This makes the probability mechanics feel temporal: uncertainty spikes, collapses into syntax, then fractures again at semantic branch points.
+
+Presentation:
+
+```text
+entropy  ███████░ 78%
+trace    ▂▆█▁▃
+```
+
+Implementation:
+
+- Compute the same normalized top-k entropy score for each playback token from its alternatives.
+- Render the last 5 to 8 entropy scores ending at the current playback cursor.
+- The trace must follow playback, not live capture. If the user steps backward, the trace rolls back too.
+- Map entropy score buckets to block glyphs such as `▁▂▃▄▅▆▇█`.
+- Color low entropy mint/muted, medium entropy gold, high entropy pink.
+
+Impact:
+
+- The audience can see the structural rhythm of generation.
+- It supports the framing that "wisdom" is cyclical probability decay and fracture, not a stable inner worldview.
+
 ### Probability / Logprob Toggle
 
 Decision candidate: add a display toggle for probability percentages versus raw log probabilities.
@@ -525,12 +555,14 @@ Scope:
 - Render a compact ASCII six-sided die for non-argmax events when pane space allows.
 - Keep die rendering static and inside the Inspektor pane; do not add animated popups or animation dependencies.
 - Add top-k entropy/confusion gauge in the Inspektor pane.
+- Add cursor-synced entropy trace for the last 5 to 8 playback tokens.
 - Add `%` / `logprob` display toggle.
 
 Exit criteria:
 
 - Non-argmax sampled tokens are obvious without manually comparing bars.
 - Entropy spikes are visible as a single gauge.
+- Recent entropy momentum is visible and follows the playback cursor.
 - The UI remains truthful by calling logprob values `logprob`, not raw logits.
 
 ### Phase 5: Latest Response Replay

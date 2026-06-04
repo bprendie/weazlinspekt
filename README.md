@@ -197,6 +197,25 @@ For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `t
 
 In Inspekt Mode, prompts are stateless by design. The current prompt is sent without prior session context so old conversation history does not poison the probability demonstration.
 
+### Inspektor Evidence
+
+The Inspektor pane marks the probability evidence directly in the token bars:
+
+- `★`: the highest-probability token returned by the model server
+- `▶`: the token the sampler actually generated
+- `▶★`: the generated token was also rank 1
+
+When `▶` and `★` appear on different rows, the model sampled a non-argmax token. With die-roll mode enabled, WeazlInspekt labels that event with `[DIE ROLL]` and renders a static ASCII die in the pane. Press `ctrl+g` to toggle this diagnostic layer on or off; the title line shows `die on` or `die off`.
+
+The entropy section adds two views of uncertainty:
+
+- `entropy`: the normalized Shannon entropy of the visible top-k alternatives for the active token
+- `trace`: a short cursor-synced history of recent entropy, ending at the current playback token
+
+The trace follows stepping and rewind. If you step back five tokens, the entropy trace rolls back with the transcript and the active probability chart.
+
+Press `ctrl+l` while Inspekt Mode is active to toggle the numeric value column between `%` and `logprob`. Outside Inspekt Mode, `ctrl+l` still opens LLM configuration.
+
 The vault stores high-entropy token splits in `messages.logit_splits` whenever the top two alternatives are less than 10 percentage points apart. That makes later SQLite queries useful without saving every routine token choice.
 
 ## Telemetry And Context Trimming

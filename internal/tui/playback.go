@@ -288,7 +288,7 @@ func (m model) renderPlaybackBlock() string {
 		b.WriteString(badge)
 	}
 	b.WriteString("\n")
-	b.WriteString(m.playbackText(true))
+	b.WriteString(m.playbackViewText())
 	b.WriteString("\n\n")
 	return b.String()
 }

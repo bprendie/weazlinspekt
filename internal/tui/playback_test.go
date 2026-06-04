@@ -100,3 +100,39 @@ func TestPlaybackViewTextWrapsStyledTokens(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderPlaybackBlockWrapsAfterStreamCompletes(t *testing.T) {
+	m := model{
+		inspektMode: true,
+		playback:    newPlaybackState(true),
+		styles:      newStyles(),
+	}
+	m.viewport.Width = 10
+	m.appendPlayback("maybe", []llm.LogprobFrame{{
+		Token: "maybe",
+		Alternatives: []llm.TokenProbability{
+			{Token: "maybe", Probability: 51},
+			{Token: "perhaps", Probability: 49},
+		},
+	}})
+	m.appendPlayback(" impossible", []llm.LogprobFrame{{
+		Token: " impossible",
+		Alternatives: []llm.TokenProbability{
+			{Token: " impossible", Probability: 99},
+		},
+	}})
+	m.advancePlayback()
+
+	block := m.renderPlaybackBlock()
+	if !strings.Contains(block, "\n") {
+		t.Fatalf("renderPlaybackBlock did not wrap: %q", block)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(block), "\n") {
+		if strings.Contains(line, "ai") || strings.Contains(line, "play") || strings.Contains(line, "pause") {
+			continue
+		}
+		if got := lipgloss.Width(line); got > m.viewport.Width {
+			t.Fatalf("line width = %d, want <= %d for %q", got, m.viewport.Width, line)
+		}
+	}
+}

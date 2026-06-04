@@ -79,6 +79,7 @@ type model struct {
 	stream              <-chan streamEvent
 	streamText          string
 	streamAt            time.Time
+	activePromptID      int64
 	inspektFrame        llm.LogprobFrame
 	inspektSplits       []inspektSplit
 	playback            playbackState

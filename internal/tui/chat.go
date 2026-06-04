@@ -99,6 +99,7 @@ func (m model) handleEnter() (tea.Model, tea.Cmd) {
 		m.messages = history
 		m.renderMessages()
 		currentPromptID := history[len(history)-1].ID
+		m.activePromptID = currentPromptID
 		contextHistory := []storage.Message(nil)
 		if m.shouldTrimForPrompt(history) {
 			return m.trimContext(true, prompt, currentPromptID, history[len(history)-2].ID)
@@ -189,6 +190,7 @@ func (m model) confirmClearContext() (tea.Model, tea.Cmd) {
 	m.pendingTools = nil
 	m.toolResults = nil
 	m.streamText = ""
+	m.activePromptID = 0
 	m.inspektFrame = llm.LogprobFrame{}
 	m.inspektSplits = nil
 	m.playback = playbackState{}

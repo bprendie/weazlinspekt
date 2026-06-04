@@ -36,6 +36,7 @@ func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		m.err = msg.err.Error()
 		m.status = "request failed"
+		m.activePromptID = 0
 		m.renderMessages()
 		return m, nil
 	}
@@ -77,6 +78,7 @@ func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 	m.session.OutputTokens += outputTokens
 	m.messages, _ = m.store.Messages(m.session.ID)
 	m.streamText = ""
+	m.activePromptID = 0
 	m.pendingTools = nil
 	m.toolResults = nil
 	m.inspektSplits = nil

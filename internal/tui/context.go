@@ -113,6 +113,19 @@ func (m model) contextHistoryForContinuation() ([]storage.Message, error) {
 	return m.contextHistory()
 }
 
+func (m model) inspektHistoryForContinuation() []storage.Message {
+	if !m.inspektMode || m.activePromptID == 0 {
+		return nil
+	}
+	history := make([]storage.Message, 0, len(m.messages))
+	for _, msg := range m.messages {
+		if msg.ID >= m.activePromptID {
+			history = append(history, msg)
+		}
+	}
+	return history
+}
+
 func (m model) contextHistory() ([]storage.Message, error) {
 	if !m.hasCheckpoint {
 		return append([]storage.Message(nil), m.messages...), nil

@@ -73,10 +73,14 @@ func (m model) executeTools(inputTokens, outputTokens int) (tea.Model, tea.Cmd) 
 	m.session.OutputTokens += outputTokens
 
 	m.messages, _ = m.store.Messages(m.session.ID)
-	contextHistory, err := m.contextHistoryForContinuation()
-	if err != nil {
-		m.err = err.Error()
-		return m, nil
+	contextHistory := m.inspektHistoryForContinuation()
+	if !m.inspektMode {
+		var err error
+		contextHistory, err = m.contextHistoryForContinuation()
+		if err != nil {
+			m.err = err.Error()
+			return m, nil
+		}
 	}
 	m.streamText = ""
 	m.reqIn = estimateMessages(contextHistory)

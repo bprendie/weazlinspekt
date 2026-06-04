@@ -24,6 +24,9 @@ func (m model) startStream(ch chan<- streamEvent, prompt string, history []stora
 				client = client.WithTools(toolDefs)
 			}
 
+			if m.inspektMode && prompt != "" {
+				history = nil
+			}
 			usage, err := client.Stream(context.Background(), history, prompt, func(event llm.StreamEvent) {
 				switch event.Type {
 				case "content":

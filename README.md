@@ -141,7 +141,7 @@ Press `ctrl+i` in chat to split the TUI into two panes:
 - Left pane, the Simulacrum: the normal message thread with Markdown rendered through Glamour.
 - Right pane, the Engine Room: the current generated token plus a top-5 probability bar chart.
 
-For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: 5` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
+For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `top_logprobs: 5` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
 
 The vault stores high-entropy token splits in `messages.logit_splits` whenever the top two alternatives are less than 10 percentage points apart. That makes later SQLite queries useful without saving every routine token choice.
 

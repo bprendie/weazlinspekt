@@ -1,0 +1,8 @@
+.gocache/
+.gomodcache/
+/weazlinspekt
+/weazlinspekt-setup
+/weazlinspekt.exe
+/weazlinspekt-setup.exe
+*.sqlite3
+*.sqlite3-*

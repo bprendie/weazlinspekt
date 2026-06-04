@@ -54,6 +54,22 @@ func TestPlaybackKeysAreInspektorOnly(t *testing.T) {
 	}
 }
 
+func TestInspektPlaybackLegendShowsStepAndSpeedKeys(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	if legend := m.inspektPlaybackLegend(); legend != "" {
+		t.Fatalf("legend outside Inspektor = %q, want empty", legend)
+	}
+	m.inspektMode = true
+	m.playback = newPlaybackState(true)
+	legend := m.inspektPlaybackLegend()
+	if !strings.Contains(legend, "[ ]") || !strings.Contains(legend, "'") {
+		t.Fatalf("legend = %q, want step and speed keys", legend)
+	}
+	if lipgloss.Width(legend) != len("[ ] step ' speed") {
+		t.Fatalf("legend width = %d, want %d", lipgloss.Width(legend), len("[ ] step ' speed"))
+	}
+}
+
 func TestWeazlArtScalesAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)

@@ -77,6 +77,9 @@ func (m model) inspektView(width, height int) string {
 	if badge := m.playbackBadge(); badge != "" {
 		title += " " + badge
 	}
+	if legend := m.inspektPlaybackLegend(); legend != "" {
+		title += " " + legend
+	}
 	token := m.styles.statusLabel.Render("token") + " " + m.styles.statusValue.Render(visibleToken(m.inspektFrame.Token))
 	if len(m.inspektFrame.Alternatives) == 0 {
 		token = m.styles.help.Render("waiting for logprobs")
@@ -95,6 +98,20 @@ func (m model) inspektView(width, height int) string {
 		Height(max(5, height-2)).
 		BorderForeground(crushPink).
 		Render(content)
+}
+
+func (m model) inspektPlaybackLegend() string {
+	if !m.inspektMode || !m.playback.enabled {
+		return ""
+	}
+	keyStyle := lipgloss.NewStyle().Foreground(crushPink).Bold(true)
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		keyStyle.Render("[ ]"),
+		m.styles.help.Render(" step "),
+		keyStyle.Render("'"),
+		m.styles.help.Render(" speed"),
+	)
 }
 
 func inspektChatWidth(total int) int {

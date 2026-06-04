@@ -118,6 +118,100 @@ Impact:
 - The left pane itself becomes evidence.
 - The audience can scan the sentence and see where probability, not understanding, drove meaningful turns.
 
+### Die Roll / Non-Argmax Indicator
+
+Decision candidate: Inspektor should explicitly mark sampled tokens that were not the highest-probability alternative.
+
+Trigger:
+
+- `active token != alternatives[0].token`
+
+Presentation:
+
+- Add a compact tag on the Inspektor title/token line, such as `[DIE ROLL]`, `[RNG OVERRIDE]`, or `[NON-ARGMAX]`.
+- Prefer `[DIE ROLL]` for stage/demo mode and `[NON-ARGMAX]` for technically literal mode.
+- The tag should use alert styling and should not require the audience to infer the event by comparing bar labels.
+- Keep this pane-native and static. No animated popup, no Harmonica dependency, and no overlay that competes with the transcript.
+
+Important technical wording:
+
+- This does not prove the model "ignored logic"; it proves the sampler selected a non-argmax token under the serving stack's sampling settings.
+- Causes may include temperature, top-p/min-p, penalties, or provider-side sampling rules.
+- For the presentation argument, the useful sentence is: the visible token was sampled from a probability distribution rather than selected by reflection or wisdom.
+
+Top-k decision:
+
+- Increase OpenAI-compatible `top_logprobs` from 5 to 6.
+- A top-6 request gives the UI enough alternatives to render an ASCII six-sided die when a non-argmax token is selected.
+- The chart can still display a compact top 5 or top 6 depending on pane width, but the frame should carry six alternatives when the server provides them.
+
+Candidate die rendering:
+
+```text
+[DIE ROLL]
+┌─────┐
+│ • • │
+│  •  │
+│ • • │
+└─────┘
+```
+
+Decision: animation is deliberately out of scope. The die should be a static diagnostic glyph inside the Inspektor pane, shown only when a non-argmax token is active. If there is not enough pane space, fall back to the compact `[DIE ROLL]` tag.
+
+Impact:
+
+- The audience can see exactly when the generated token was not the top-ranked token.
+- This is stronger than a hesitation marker because it shows the sampler taking an alternate branch in real time.
+
+### Confusion Index / Top-K Entropy Gauge
+
+Decision candidate: add a small entropy gauge to the bottom of the Inspektor pane.
+
+Metric:
+
+```go
+entropy := -sum(p * math.Log2(p))
+score := entropy / math.Log2(float64(len(alternatives)))
+```
+
+Where `p` is the normalized visible probability value for each displayed alternative.
+
+Naming:
+
+- Prefer `top-k entropy` or `confusion index`.
+- Avoid claiming full-vocabulary entropy because the API only returns visible top alternatives.
+
+Presentation:
+
+- Low entropy: mint/green.
+- Medium entropy: gold/yellow.
+- High entropy: pink/red.
+- The gauge should spike when alternatives are close, especially at philosophical pivots or semantic branch points.
+
+Impact:
+
+- The audience does not have to read every percentage.
+- A single bar can show when the model is mechanically uncertain.
+
+### Probability / Logprob Toggle
+
+Decision candidate: add a display toggle for probability percentages versus raw log probabilities.
+
+Keybind candidate:
+
+- `ctrl+l`: toggle displayed alternative values between `%` and `logprob`.
+
+Technical constraint:
+
+- Standard OpenAI-compatible APIs return log probabilities, not raw pre-softmax logits.
+- Do not label this as "raw logits" unless a future custom endpoint returns actual logits.
+- Accurate UI labels: `%` and `logprob`.
+
+Impact:
+
+- Percentages are readable for the audience.
+- Logprobs expose the calculator-like substrate underneath and make close scores feel less mystical.
+
 ### Parser Confidence
 
 The vLLM chat-completions logprob schema is already the target parser shape:
@@ -419,7 +513,27 @@ Exit criteria:
 - Existing sessions migrate cleanly.
 - Tests cover save/load and encryption round trip.
 
-### Phase 4: Latest Response Replay
+### Phase 4: Presentation Evidence Layer
+
+Objective: make the probability argument explicit enough for a live audience.
+
+Scope:
+
+- Request `top_logprobs: 6` from OpenAI-compatible providers.
+- Add non-argmax detection for active playback frames.
+- Render a `[DIE ROLL]` or `[NON-ARGMAX]` indicator when the sampled token is not rank 1.
+- Render a compact ASCII six-sided die for non-argmax events when pane space allows.
+- Keep die rendering static and inside the Inspektor pane; do not add animated popups or animation dependencies.
+- Add top-k entropy/confusion gauge in the Inspektor pane.
+- Add `%` / `logprob` display toggle.
+
+Exit criteria:
+
+- Non-argmax sampled tokens are obvious without manually comparing bars.
+- Entropy spikes are visible as a single gauge.
+- The UI remains truthful by calling logprob values `logprob`, not raw logits.
+
+### Phase 5: Latest Response Replay
 
 Objective: replay the most recent assistant response from the vault.
 
@@ -433,7 +547,7 @@ Exit criteria:
 
 - Restarting the app and reopening the session can replay the latest assistant response forensically.
 
-### Phase 5: Historical Replay Picker
+### Phase 6: Historical Replay Picker
 
 Objective: select older assistant responses with playback data.
 

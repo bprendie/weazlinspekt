@@ -103,6 +103,9 @@ func (m model) inspektView(width, height int) string {
 	}
 	if gauge := m.entropyGauge(width - 4); gauge != "" {
 		lines = append(lines, "", gauge)
+		if trace := m.entropyTrace(width - 4); trace != "" {
+			lines = append(lines, trace)
+		}
 	}
 	if len(m.inspektSplits) > 0 {
 		last := m.inspektSplits[len(m.inspektSplits)-1]

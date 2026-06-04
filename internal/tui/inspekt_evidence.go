@@ -171,6 +171,63 @@ func (m model) entropyGauge(width int) string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, label, " ", bar, " ", value)
 }
 
+func (m model) entropyTrace(width int) string {
+	scores := m.entropyTraceScores(8)
+	if len(scores) == 0 {
+		return ""
+	}
+	label := m.styles.statusLabel.Render("trace")
+	var trace strings.Builder
+	for _, score := range scores {
+		trace.WriteString(entropyGlyph(score))
+	}
+	renderedTrace := colorEntropyTrace(trace.String(), scores)
+	out := lipgloss.JoinHorizontal(lipgloss.Top, label, " ", renderedTrace)
+	if lipgloss.Width(out) > width {
+		return ""
+	}
+	return out
+}
+
+func (m model) entropyTraceScores(limit int) []float64 {
+	if !m.playback.enabled || m.playback.cursor < 0 || len(m.playback.tokens) == 0 {
+		return nil
+	}
+	start := max(0, m.playback.cursor-limit+1)
+	scores := make([]float64, 0, m.playback.cursor-start+1)
+	for i := start; i <= m.playback.cursor && i < len(m.playback.tokens); i++ {
+		score, ok := topKEntropy(firstN(m.playback.tokens[i].Alternatives, 5))
+		if !ok {
+			continue
+		}
+		scores = append(scores, score)
+	}
+	return scores
+}
+
+func entropyGlyph(score float64) string {
+	glyphs := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
+	idx := min(len(glyphs)-1, max(0, int(score*float64(len(glyphs)))))
+	return glyphs[idx]
+}
+
+func colorEntropyTrace(trace string, scores []float64) string {
+	runes := []rune(trace)
+	var b strings.Builder
+	for i, r := range runes {
+		color := crushMint
+		if i < len(scores) {
+			if scores[i] >= 0.7 {
+				color = crushPink
+			} else if scores[i] >= 0.35 {
+				color = crushGold
+			}
+		}
+		b.WriteString(lipgloss.NewStyle().Foreground(color).Render(string(r)))
+	}
+	return b.String()
+}
+
 func topKEntropy(alts []llm.TokenProbability) (float64, bool) {
 	if len(alts) < 2 {
 		return 0, false

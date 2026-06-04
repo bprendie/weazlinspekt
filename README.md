@@ -28,7 +28,7 @@ LLMs are heavily fine-tuned to project high confidence. But when you ask a model
 - Solid green: the model is highly confident. Usually seen on structural syntax, common idioms, or obvious continuations.
 - Warning yellow and alert magenta: the model is mathematically torn. The probabilities split into contested distributions, drawing your eye to the exact moment a profound turn of phrase was actually a tight statistical coin toss.
 
-The Inspektor pane also renders a `top-k entropy` gauge. Low entropy means the visible alternatives are concentrated around one obvious token. High entropy means the returned alternatives are spread across competing continuations. This is a top-k diagnostic, not a full-vocabulary entropy claim.
+The Inspektor pane also renders a `top-k entropy` gauge and a short entropy trace. Low entropy means the visible alternatives are concentrated around one obvious token. High entropy means the returned alternatives are spread across competing continuations. The trace shows recent entropy momentum ending at the current playback cursor. This is a top-k diagnostic, not a full-vocabulary entropy claim.
 
 Press `ctrl+l` while Inspekt Mode is active to toggle the value column between percentages and raw `logprob` values. The API does not expose true pre-softmax logits, so the UI labels this mode accurately as `logprob`.
 

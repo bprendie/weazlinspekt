@@ -249,6 +249,55 @@ func TestEntropyGaugeFitsWidth(t *testing.T) {
 	}
 }
 
+func TestEntropyTraceFollowsPlaybackCursor(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.playback = newPlaybackState(true)
+	for i, alts := range [][]llm.TokenProbability{
+		{{Token: "a", Probability: 99}, {Token: "b", Probability: 1}},
+		{{Token: "a", Probability: 50}, {Token: "b", Probability: 50}},
+		{{Token: "a", Probability: 34}, {Token: "b", Probability: 33}, {Token: "c", Probability: 33}},
+	} {
+		m.playback.tokens = append(m.playback.tokens, playbackToken{
+			Index:        i,
+			Text:         string(rune('a' + i)),
+			Alternatives: alts,
+		})
+	}
+	m.playback.cursor = 2
+	full := m.entropyTraceScores(8)
+	if len(full) != 3 {
+		t.Fatalf("trace scores = %d, want 3", len(full))
+	}
+	m.playback.cursor = 1
+	rewound := m.entropyTraceScores(8)
+	if len(rewound) != 2 {
+		t.Fatalf("rewound trace scores = %d, want 2", len(rewound))
+	}
+	if rewound[len(rewound)-1] != full[1] {
+		t.Fatal("trace did not end at rewound cursor")
+	}
+}
+
+func TestEntropyTraceFitsWidth(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.playback = newPlaybackState(true)
+	m.playback.cursor = 0
+	m.playback.tokens = []playbackToken{{
+		Text: "a",
+		Alternatives: []llm.TokenProbability{
+			{Token: "a", Probability: 42},
+			{Token: "b", Probability: 24},
+		},
+	}}
+	trace := m.entropyTrace(20)
+	if trace == "" {
+		t.Fatal("entropy trace should render")
+	}
+	if got := lipgloss.Width(trace); got > 20 {
+		t.Fatalf("trace width = %d, want <= 20 for %q", got, trace)
+	}
+}
+
 func TestWeazlArtScalesAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)

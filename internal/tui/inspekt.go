@@ -58,6 +58,8 @@ func highEntropySplit(frame llm.LogprobFrame) (inspektSplit, bool) {
 }
 
 func (m model) inspektView(width, height int) string {
+	innerWidth := max(20, width-4)
+	innerHeight := max(5, height-4)
 	title := m.styles.roleTool.Render("inspektor")
 	token := m.styles.statusLabel.Render("token") + " " + m.styles.statusValue.Render(visibleToken(m.inspektFrame.Token))
 	if len(m.inspektFrame.Alternatives) == 0 {
@@ -71,7 +73,7 @@ func (m model) inspektView(width, height int) string {
 		last := m.inspektSplits[len(m.inspektSplits)-1]
 		lines = append(lines, "", m.styles.statusWarn.Render(fmt.Sprintf("hesitation gap %.2f%%", last.Gap)))
 	}
-	content := strings.Join(lines, "\n")
+	content := m.withInspektWeazl(lines, innerWidth, innerHeight)
 	return m.styles.sidebar.
 		Width(max(20, width-2)).
 		Height(max(5, height-2)).
@@ -91,6 +93,49 @@ func (m model) inspektBar(width int, alt llm.TokenProbability) string {
 	)
 	label := lipgloss.NewStyle().Width(labelWidth).Foreground(ink).Render(trimToWidth(visibleToken(alt.Token), labelWidth))
 	return fmt.Sprintf("%s %s %5.1f%%", label, bar, alt.Probability)
+}
+
+func (m model) withInspektWeazl(lines []string, width, height int) string {
+	available := height - len(lines) - 1
+	if available < 6 || width < 18 {
+		return strings.Join(lines, "\n")
+	}
+	art := clippedWeazl(width, available)
+	if len(art) == 0 {
+		return strings.Join(lines, "\n")
+	}
+	for len(lines)+len(art) < height {
+		lines = append(lines, "")
+	}
+	style := lipgloss.NewStyle().Foreground(crushGold)
+	for _, line := range art {
+		lines = append(lines, lipgloss.NewStyle().Width(width).Align(lipgloss.Right).Render(style.Render(line)))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func clippedWeazl(width, height int) []string {
+	source := strings.Split(inspektWeazlArt, "\n")
+	if len(source) > height {
+		source = source[len(source)-height:]
+	}
+	out := make([]string, 0, len(source))
+	for _, line := range source {
+		line = strings.TrimRight(line, " ")
+		if lipgloss.Width(line) > width {
+			line = rightRunes(line, width)
+		}
+		out = append(out, line)
+	}
+	return out
+}
+
+func rightRunes(s string, width int) string {
+	r := []rune(s)
+	for len(r) > 0 && lipgloss.Width(string(r)) > width {
+		r = r[1:]
+	}
+	return string(r)
 }
 
 func visibleToken(s string) string {
@@ -123,3 +168,27 @@ func firstN[T any](items []T, n int) []T {
 	}
 	return items[:n]
 }
+
+const inspektWeazlArt = `              +########+.
+          +################+.
+        .###-#################
+        ###+..+-..-###########+
+        ###.++++-+-.######+####
+        #+..-.-++.++#########++.
+     .+ ##-+#####+##-######--#-. .
+    ....- ..--.+-.+..++.--.++ .--..
+    -.--+++++++.++++++##.++..- .--.#+
+    .-.+#####+#++-# ###+.----......---.#+
+      --...##.--.-#+.----.+.##.-.........
+      .+.-#...+++-.#--+--.+...--.
+      -+-.  -#####+....###.......
+       ##++.+#####.--...-+##-.....
+        ++##----.#####-###+++.....
+          ##. .  #######+++-......
+          .###--+###+-+..++---+-..
+             .#####+ ..-++++++....
+              -.  ...-+-+###-+-+..
+               +#+--+++#####+++-...
+               -####+#######-+-.+-...
+              #+############++++++...
+             +++############+++++#-`

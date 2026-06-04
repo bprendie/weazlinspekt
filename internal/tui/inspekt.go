@@ -10,7 +10,10 @@ import (
 	"github.com/bprendie/weazlinspekt/internal/llm"
 )
 
-const inspektSplitThreshold = 10.0
+const (
+	inspektSplitThreshold = 10.0
+	inspektWeazlScale     = 0.60
+)
 
 type inspektSplit struct {
 	Token        string                 `json:"token"`
@@ -107,15 +110,14 @@ func (m model) withInspektWeazl(lines []string, width, height int) string {
 	for len(lines)+len(art) < height {
 		lines = append(lines, "")
 	}
-	style := lipgloss.NewStyle().Foreground(crushGold)
 	for _, line := range art {
-		lines = append(lines, lipgloss.NewStyle().Width(width).Align(lipgloss.Right).Render(style.Render(line)))
+		lines = append(lines, lipgloss.NewStyle().Width(width).Align(lipgloss.Right).Render(colorWeazlLine(line)))
 	}
 	return strings.Join(lines, "\n")
 }
 
 func clippedWeazl(width, height int) []string {
-	source := strings.Split(inspektWeazlArt, "\n")
+	source := scaleWeazlArt(strings.Split(inspektWeazlArt, "\n"), inspektWeazlScale)
 	if len(source) > height {
 		source = source[len(source)-height:]
 	}
@@ -128,6 +130,55 @@ func clippedWeazl(width, height int) []string {
 		out = append(out, line)
 	}
 	return out
+}
+
+func scaleWeazlArt(source []string, scale float64) []string {
+	if scale >= 1 {
+		return source
+	}
+	targetHeight := max(1, int(float64(len(source))*scale))
+	scaled := make([]string, 0, targetHeight)
+	for y := 0; y < targetHeight; y++ {
+		srcY := min(len(source)-1, int(float64(y)/scale))
+		srcRunes := []rune(source[srcY])
+		targetWidth := max(1, int(float64(len(srcRunes))*scale))
+		out := make([]rune, 0, targetWidth)
+		for x := 0; x < targetWidth; x++ {
+			srcX := min(len(srcRunes)-1, int(float64(x)/scale))
+			out = append(out, srcRunes[srcX])
+		}
+		scaled = append(scaled, string(out))
+	}
+	return scaled
+}
+
+func colorWeazlLine(line string) string {
+	var b strings.Builder
+	for _, r := range line {
+		b.WriteString(weazlRuneStyle(r).Render(string(r)))
+	}
+	return b.String()
+}
+
+func weazlRuneStyle(r rune) lipgloss.Style {
+	switch r {
+	case '█', '▌':
+		return lipgloss.NewStyle().Foreground(border)
+	case '▓':
+		return lipgloss.NewStyle().Foreground(crushPurple)
+	case '▒':
+		return lipgloss.NewStyle().Foreground(crushPink)
+	case '░':
+		return lipgloss.NewStyle().Foreground(muted)
+	case '╣', '╬', '║', '╫', '╠', '╙', '╚':
+		return lipgloss.NewStyle().Foreground(crushGold)
+	case '▀', '▄':
+		return lipgloss.NewStyle().Foreground(crushMint)
+	case 'M':
+		return lipgloss.NewStyle().Foreground(ink).Bold(true)
+	default:
+		return lipgloss.NewStyle().Foreground(crushGold)
+	}
 }
 
 func rightRunes(s string, width int) string {

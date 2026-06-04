@@ -10,10 +10,7 @@ import (
 	"github.com/bprendie/weazlinspekt/internal/llm"
 )
 
-const (
-	inspektSplitThreshold = 10.0
-	inspektWeazlScale     = 0.60
-)
+const inspektSplitThreshold = 10.0
 
 type inspektSplit struct {
 	Token        string                 `json:"token"`
@@ -117,7 +114,7 @@ func (m model) withInspektWeazl(lines []string, width, height int) string {
 }
 
 func clippedWeazl(width, height int) []string {
-	source := scaleWeazlArt(strings.Split(inspektWeazlArt, "\n"), inspektWeazlScale)
+	source := strings.Split(inspektWeazlArt, "\n")
 	if len(source) > height {
 		source = source[len(source)-height:]
 	}
@@ -132,26 +129,6 @@ func clippedWeazl(width, height int) []string {
 	return out
 }
 
-func scaleWeazlArt(source []string, scale float64) []string {
-	if scale >= 1 {
-		return source
-	}
-	targetHeight := max(1, int(float64(len(source))*scale))
-	scaled := make([]string, 0, targetHeight)
-	for y := 0; y < targetHeight; y++ {
-		srcY := min(len(source)-1, int(float64(y)/scale))
-		srcRunes := []rune(source[srcY])
-		targetWidth := max(1, int(float64(len(srcRunes))*scale))
-		out := make([]rune, 0, targetWidth)
-		for x := 0; x < targetWidth; x++ {
-			srcX := min(len(srcRunes)-1, int(float64(x)/scale))
-			out = append(out, srcRunes[srcX])
-		}
-		scaled = append(scaled, string(out))
-	}
-	return scaled
-}
-
 func colorWeazlLine(line string) string {
 	var b strings.Builder
 	for _, r := range line {
@@ -163,21 +140,21 @@ func colorWeazlLine(line string) string {
 func weazlRuneStyle(r rune) lipgloss.Style {
 	switch r {
 	case '█', '▌':
-		return lipgloss.NewStyle().Foreground(border)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("235"))
 	case '▓':
-		return lipgloss.NewStyle().Foreground(crushPurple)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("99"))
 	case '▒':
-		return lipgloss.NewStyle().Foreground(crushPink)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("204"))
 	case '░':
-		return lipgloss.NewStyle().Foreground(muted)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	case '╣', '╬', '║', '╫', '╠', '╙', '╚':
-		return lipgloss.NewStyle().Foreground(crushGold)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("220"))
 	case '▀', '▄':
-		return lipgloss.NewStyle().Foreground(crushMint)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("48"))
 	case 'M':
-		return lipgloss.NewStyle().Foreground(ink).Bold(true)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("231")).Bold(true)
 	default:
-		return lipgloss.NewStyle().Foreground(crushGold)
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 	}
 }
 

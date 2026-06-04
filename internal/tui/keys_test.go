@@ -33,18 +33,21 @@ func TestTabTogglesInspektMode(t *testing.T) {
 	}
 }
 
-func TestWeazlArtScalesAndColorizes(t *testing.T) {
+func TestWeazlArtKeepsSizeAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
-	scaled := scaleWeazlArt(source, inspektWeazlScale)
-	if len(scaled) >= len(source) {
-		t.Fatalf("scaled height = %d, want less than %d", len(scaled), len(source))
+	clipped := clippedWeazl(200, 200)
+	if len(clipped) != len(source) {
+		t.Fatalf("clipped height = %d, want %d", len(clipped), len(source))
 	}
-	if lipgloss.Width(scaled[0]) >= lipgloss.Width(source[0]) {
-		t.Fatalf("scaled width = %d, want less than %d", lipgloss.Width(scaled[0]), lipgloss.Width(source[0]))
+	if lipgloss.Width(clipped[0]) != lipgloss.Width(source[0]) {
+		t.Fatalf("clipped width = %d, want %d", lipgloss.Width(clipped[0]), lipgloss.Width(source[0]))
 	}
 
 	if weazlRuneStyle('▓').GetForeground() == weazlRuneStyle('▒').GetForeground() {
 		t.Fatal("density glyphs should use distinct colors")
+	}
+	if weazlRuneStyle('█').GetForeground() != lipgloss.Color("235") {
+		t.Fatal("solid block should use ANSI 256-color palette index 235")
 	}
 	colored := colorWeazlLine("█▓▒░╣▀M")
 	if lipgloss.Width(colored) != 7 {

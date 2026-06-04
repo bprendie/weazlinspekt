@@ -19,11 +19,18 @@ Turn Inspektor from a live-only probability display into a forensic playback sur
   - 0.1x
   - step/manual
 
-Open detail: we need a key for cycling speed, unless speed is selected through an Inspektor pane control. Candidate keys could be `;`/`.` or a small mode cycle on `'` when paused, but that needs care to avoid surprising chat input behavior.
+Decision: `'` cycles playback speed/state while Inspektor mode is active:
+
+- `0.1x`
+- `0.5x`
+- `1.0x`
+- `step`
 
 Decision: Inspektor mode starts at `0.1x` playback by default. Fast local models can emit far more tokens than a human can inspect, so the diagnostic mode should privilege legibility over raw streaming speed.
 
 Decision: playback controls are active only when Inspektor mode is active. Outside Inspektor mode, `'`, `[`, and `]` remain normal chat input.
+
+Decision: active playback rendering must skip Glamour Markdown. Glamour is appropriate for normal stored assistant responses, but it strips or rearranges the Lipgloss formatting used for active-token and hesitation evidence.
 
 ## Behavioral Model
 
@@ -102,7 +109,7 @@ Candidate behavior:
 - Current active token gets a cursor/highlight style.
 - If the active token has low confidence, the highlight shifts to warning gold.
 - If the active token is a near tie, the highlight shifts to alert pink/red.
-- Previously generated high-entropy tokens may retain a subtle marker or underline so the transcript shows where the model hesitated.
+- Previously generated high-entropy tokens retain their warning/coinflip highlight for the rest of the playback session so the transcript shows where the model hesitated.
 
 Impact:
 
@@ -342,7 +349,6 @@ Open question: the current TUI does not have message focus/selection inside chat
 
 ## Decisions Needed
 
-- What key cycles playback speed?
 - Should `[`, `]`, and `'` be intercepted only in Inspektor mode?
 - Should playback JSON be encrypted like message content?
 - Should a live paused stream hide future text from the transcript until playback catches up?

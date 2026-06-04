@@ -67,6 +67,9 @@ func (m model) inspektView(width, height int) string {
 	innerWidth := max(20, width-4)
 	innerHeight := max(5, height-4)
 	title := m.styles.roleTool.Render("inspektor")
+	if badge := m.playbackBadge(); badge != "" {
+		title += " " + badge
+	}
 	token := m.styles.statusLabel.Render("token") + " " + m.styles.statusValue.Render(visibleToken(m.inspektFrame.Token))
 	if len(m.inspektFrame.Alternatives) == 0 {
 		token = m.styles.help.Render("waiting for logprobs")

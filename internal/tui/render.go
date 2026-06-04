@@ -64,7 +64,7 @@ func (m model) View() string {
 // renderMessages updates the viewport with the current message history and streaming state
 func (m *model) renderMessages() {
 	var b strings.Builder
-	b.WriteString(m.renderTranscript(m.messages))
+	b.WriteString(m.renderTranscript(m.playbackMessages()))
 	if m.thinking {
 		b.WriteString(m.styles.roleAI.Render("ai"))
 		b.WriteString("\n")
@@ -86,6 +86,9 @@ func (m *model) renderMessages() {
 			}
 		}
 		b.WriteString("\n\n")
+	}
+	if !m.thinking && m.renderPlaybackAssistant() {
+		b.WriteString(m.renderPlaybackBlock())
 	}
 	m.viewport.SetContent(b.String())
 	m.viewport.GotoBottom()

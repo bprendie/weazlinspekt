@@ -80,8 +80,10 @@ func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 	m.pendingTools = nil
 	m.toolResults = nil
 	m.inspektSplits = nil
-	m.inspektFrame = llm.LogprobFrame{}
-	m.playback = playbackState{}
+	if !m.playback.enabled {
+		m.inspektFrame = llm.LogprobFrame{}
+		m.playback = playbackState{}
+	}
 	m.reqIn = 0
 	m.reqOut = 0
 	m.renderMessages()
@@ -128,7 +130,7 @@ func (m model) resumeAfterAutoTrim(msg contextTrimMsg) (tea.Model, tea.Cmd) {
 		m.status = "request failed"
 		return m, nil
 	}
-	return m, tea.Batch(m.startStream(ch, msg.prompt, history), waitStream(ch), m.working.Tick, playbackTick())
+	return m, tea.Batch(m.startStream(ch, msg.prompt, history), waitStream(ch), m.working.Tick, m.playbackInitialCmd())
 }
 
 func (m model) handlePreviousSessionMsg(msg previousSessionMsg) (tea.Model, tea.Cmd) {

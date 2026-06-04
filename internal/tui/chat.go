@@ -120,7 +120,7 @@ func (m model) handleEnter() (tea.Model, tea.Cmd) {
 		m.status = "streaming"
 		ch := make(chan streamEvent, 64)
 		m.stream = ch
-		return m, tea.Batch(m.startStream(ch, prompt, contextHistory), waitStream(ch), m.working.Tick, playbackTick())
+		return m, tea.Batch(m.startStream(ch, prompt, contextHistory), waitStream(ch), m.working.Tick, m.playbackInitialCmd())
 	}
 	return m, nil
 }

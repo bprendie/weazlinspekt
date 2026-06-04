@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/bprendie/weazlinspekt/internal/llm"
+	"github.com/bprendie/weazlinspekt/internal/storage"
 )
 
 type playbackRate int
@@ -119,6 +120,12 @@ func (m model) playbackText(highlight bool) string {
 			b.WriteString(m.activeTokenStyle(m.playback.tokens[i]).Render(text))
 			continue
 		}
+		if highlight {
+			if style, ok := m.hesitationTokenStyle(m.playback.tokens[i]); ok {
+				b.WriteString(style.Render(text))
+				continue
+			}
+		}
 		b.WriteString(text)
 	}
 	return b.String()
@@ -136,40 +143,183 @@ func (m model) playbackFullText() string {
 }
 
 func (m model) activeTokenStyle(tok playbackToken) lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0D0D12")).
-		Background(crushMint).
-		Bold(true)
+	style := baseTokenHighlight()
+	if hesitation, ok := m.hesitationTokenStyle(tok); ok {
+		return hesitation.Bold(true)
+	}
+	return style
+}
+
+func (m model) hesitationTokenStyle(tok playbackToken) (lipgloss.Style, bool) {
 	if len(tok.Alternatives) < 2 {
-		return style
+		return lipgloss.Style{}, false
 	}
 	top := tok.Alternatives[0].Probability
 	gap := top - tok.Alternatives[1].Probability
 	if gap < 0 {
 		gap = -gap
 	}
+	style := baseTokenHighlight()
 	if gap < inspektSplitThreshold {
-		return style.Background(crushPink)
+		return style.Background(crushPink), true
 	}
 	if top < 65 {
-		return style.Background(crushGold)
+		return style.Background(crushGold), true
 	}
-	return style
+	return lipgloss.Style{}, false
+}
+
+func baseTokenHighlight() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#0D0D12")).
+		Background(crushMint).
+		Bold(true)
 }
 
 func (m model) togglePlayback() (model, tea.Cmd) {
 	if !m.inspektMode || !m.playback.enabled {
 		return m, nil
 	}
-	m.playback.playing = !m.playback.playing
+	m.playback.rate = m.playback.rate.nextRate()
+	m.playback.playing = true
 	m.applyPlaybackCursor()
 	m.renderMessages()
-	if m.playback.playing {
-		m.status = "inspektor playing 0.1x"
-		return m, playbackTick()
+	if m.playback.rate == playbackStep {
+		m.playback.playing = false
+		m.status = "inspektor step " + playbackStatus("", m.playback)
+		return m, nil
 	}
-	m.status = playbackStatus("paused", m.playback)
-	return m, nil
+	m.status = "inspektor " + m.playback.rate.label()
+	return m, m.playbackTickCmd()
+}
+
+func (r playbackRate) nextRate() playbackRate {
+	switch r {
+	case playbackTenth:
+		return playbackHalf
+	case playbackHalf:
+		return playbackRealtime
+	case playbackRealtime:
+		return playbackStep
+	default:
+		return playbackTenth
+	}
+}
+
+func (r playbackRate) label() string {
+	switch r {
+	case playbackRealtime:
+		return "1.0x"
+	case playbackHalf:
+		return "0.5x"
+	case playbackTenth:
+		return "0.1x"
+	default:
+		return "step"
+	}
+}
+
+func (m model) playbackDelay() time.Duration {
+	switch m.playback.rate {
+	case playbackRealtime:
+		return 20 * time.Millisecond
+	case playbackHalf:
+		return 50 * time.Millisecond
+	case playbackTenth:
+		return 100 * time.Millisecond
+	default:
+		return 0
+	}
+}
+
+func (m model) playbackBadge() string {
+	if !m.inspektMode || !m.playback.enabled {
+		return ""
+	}
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#0D0D12")).
+		Background(crushGold).
+		Bold(true).
+		Padding(0, 1)
+	if m.playback.playing {
+		return style.Render("play " + m.playback.rate.label())
+	}
+	return style.Render("pause " + m.playback.rate.label())
+}
+
+func (m model) renderPlaybackAssistant() bool {
+	return m.inspektMode && m.playback.enabled && len(m.playback.tokens) > 0
+}
+
+func (m model) playbackMessageID() int64 {
+	if len(m.messages) == 0 {
+		return 0
+	}
+	last := m.messages[len(m.messages)-1]
+	if last.Role != "assistant" || strings.TrimSpace(last.Content) == "" {
+		return 0
+	}
+	if last.Content != m.playbackFullText() {
+		return 0
+	}
+	return last.ID
+}
+
+func (m model) playbackMessages() []storage.Message {
+	msgID := m.playbackMessageID()
+	if msgID == 0 {
+		return m.messages
+	}
+	return m.messages[:len(m.messages)-1]
+}
+
+func (m model) renderPlaybackBlock() string {
+	if !m.renderPlaybackAssistant() {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(m.styles.roleAI.Render("ai"))
+	b.WriteString(" ")
+	if badge := m.playbackBadge(); badge != "" {
+		b.WriteString(badge)
+	}
+	b.WriteString("\n")
+	b.WriteString(m.playbackText(true))
+	b.WriteString("\n\n")
+	return b.String()
+}
+
+func playbackTickFor(d time.Duration) tea.Cmd {
+	if d <= 0 {
+		return nil
+	}
+	return tea.Tick(d, func(time.Time) tea.Msg {
+		return playbackTickMsg{}
+	})
+}
+
+func (m model) playbackTickCmd() tea.Cmd {
+	if !m.playback.enabled || !m.playback.playing || m.playback.rate == playbackStep {
+		return nil
+	}
+	if d := m.playbackDelay(); d > 0 {
+		return playbackTickFor(d)
+	}
+	return nil
+}
+
+func (m model) playbackInitialCmd() tea.Cmd {
+	if !m.playback.enabled || !m.playback.playing {
+		return nil
+	}
+	return m.playbackTickCmd()
+}
+
+func (m model) playbackAdvanceCmd() tea.Cmd {
+	if !m.playback.enabled || !m.playback.playing {
+		return nil
+	}
+	return m.playbackTickCmd()
 }
 
 func (m model) stepPlayback(delta int) (model, tea.Cmd) {
@@ -194,20 +344,14 @@ func (m model) handlePlaybackTick() (tea.Model, tea.Cmd) {
 	}
 	if !m.advancePlayback() {
 		if m.thinking {
-			return m, playbackTick()
+			return m, m.playbackTickCmd()
 		}
 		m.status = playbackStatus("caught up", m.playback)
 		return m, nil
 	}
 	m.applyPlaybackCursor()
 	m.renderMessages()
-	return m, playbackTick()
-}
-
-func playbackTick() tea.Cmd {
-	return tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg {
-		return playbackTickMsg{}
-	})
+	return m, m.playbackTickCmd()
 }
 
 func playbackStatus(prefix string, state playbackState) string {

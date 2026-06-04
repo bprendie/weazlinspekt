@@ -28,6 +28,8 @@ LLMs are heavily fine-tuned to project high confidence. But when you ask a model
 - Solid green: the model is highly confident. Usually seen on structural syntax, common idioms, or obvious continuations.
 - Warning yellow and alert magenta: the model is mathematically torn. The probabilities split into contested distributions, drawing your eye to the exact moment a profound turn of phrase was actually a tight statistical coin toss.
 
+The Inspektor pane also renders a `top-k entropy` gauge. Low entropy means the visible alternatives are concentrated around one obvious token. High entropy means the returned alternatives are spread across competing continuations. This is a top-k diagnostic, not a full-vocabulary entropy claim.
+
 Want to analyze a generation closely? Inspekt Mode buffers the token stream into RAM and starts playback at `0.1x` so the stream is readable. Press `'` to cycle playback speed through `0.1x`, `0.5x`, `1.0x`, and step mode. Press `[` to step back one token and `]` to step forward one token. The transcript and Inspektor stay synchronized so the highlighted token and probability chart represent the same model state.
 
 ## Immutable Vault Integration

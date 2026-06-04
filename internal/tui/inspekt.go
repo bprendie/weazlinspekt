@@ -98,6 +98,9 @@ func (m model) inspektView(width, height int) string {
 	for i, alt := range firstN(m.inspektFrame.Alternatives, 5) {
 		lines = append(lines, m.inspektBar(width-4, alt, i))
 	}
+	if gauge := m.entropyGauge(width - 4); gauge != "" {
+		lines = append(lines, "", gauge)
+	}
 	if len(m.inspektSplits) > 0 {
 		last := m.inspektSplits[len(m.inspektSplits)-1]
 		lines = append(lines, "", m.styles.statusWarn.Render(fmt.Sprintf("hesitation gap %.2f%%", last.Gap)))

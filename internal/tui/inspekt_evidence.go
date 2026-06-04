@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -117,4 +118,56 @@ func (m model) inspektBarMarker(alt llm.TokenProbability, rank int) string {
 	default:
 		return "  "
 	}
+}
+
+func (m model) entropyGauge(width int) string {
+	score, ok := topKEntropy(firstN(m.inspektFrame.Alternatives, 5))
+	if !ok {
+		return ""
+	}
+	label := m.styles.statusLabel.Render("entropy")
+	value := m.styles.statusValue.Render(fmt.Sprintf("%3.0f%%", score*100))
+	barWidth := max(4, width-lipgloss.Width("entropy ")-lipgloss.Width(" 100% ")-1)
+	fill := min(barWidth, max(0, int(score*float64(barWidth))))
+	color := crushMint
+	if score >= 0.7 {
+		color = crushPink
+	} else if score >= 0.35 {
+		color = crushGold
+	}
+	bar := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().Background(color).Render(strings.Repeat(" ", fill)),
+		lipgloss.NewStyle().Background(border).Render(strings.Repeat(" ", barWidth-fill)),
+	)
+	return lipgloss.JoinHorizontal(lipgloss.Top, label, " ", bar, " ", value)
+}
+
+func topKEntropy(alts []llm.TokenProbability) (float64, bool) {
+	if len(alts) < 2 {
+		return 0, false
+	}
+	total := 0.0
+	for _, alt := range alts {
+		if alt.Probability > 0 {
+			total += alt.Probability
+		}
+	}
+	if total <= 0 {
+		return 0, false
+	}
+	entropy := 0.0
+	used := 0
+	for _, alt := range alts {
+		if alt.Probability <= 0 {
+			continue
+		}
+		p := alt.Probability / total
+		entropy -= p * math.Log2(p)
+		used++
+	}
+	if used < 2 {
+		return 0, false
+	}
+	return min(1, entropy/math.Log2(float64(used))), true
 }

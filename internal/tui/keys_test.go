@@ -170,6 +170,49 @@ func TestInspektBarsMarkSelectedAndTopTokens(t *testing.T) {
 	}
 }
 
+func TestTopKEntropyTracksDistributionSpread(t *testing.T) {
+	low, ok := topKEntropy([]llm.TokenProbability{
+		{Token: "a", Probability: 99},
+		{Token: "b", Probability: 1},
+	})
+	if !ok {
+		t.Fatal("low entropy distribution should be measurable")
+	}
+	high, ok := topKEntropy([]llm.TokenProbability{
+		{Token: "a", Probability: 34},
+		{Token: "b", Probability: 33},
+		{Token: "c", Probability: 33},
+	})
+	if !ok {
+		t.Fatal("high entropy distribution should be measurable")
+	}
+	if high <= low {
+		t.Fatalf("entropy high %.3f <= low %.3f", high, low)
+	}
+	if high < 0.95 {
+		t.Fatalf("balanced entropy = %.3f, want near 1", high)
+	}
+}
+
+func TestEntropyGaugeFitsWidth(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.inspektFrame = llm.LogprobFrame{
+		Token: "red",
+		Alternatives: []llm.TokenProbability{
+			{Token: "red", Probability: 42},
+			{Token: "green", Probability: 24},
+			{Token: "blue", Probability: 11},
+		},
+	}
+	gauge := m.entropyGauge(30)
+	if gauge == "" {
+		t.Fatal("entropy gauge should render")
+	}
+	if got := lipgloss.Width(gauge); got > 30 {
+		t.Fatalf("gauge width = %d, want <= 30 for %q", got, gauge)
+	}
+}
+
 func TestWeazlArtScalesAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)

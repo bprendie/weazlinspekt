@@ -95,8 +95,8 @@ func (m model) inspektView(width, height int) string {
 		lines = append(lines, m.dieRollView()...)
 		lines = append(lines, "")
 	}
-	for _, alt := range firstN(m.inspektFrame.Alternatives, 5) {
-		lines = append(lines, m.inspektBar(width-4, alt))
+	for i, alt := range firstN(m.inspektFrame.Alternatives, 5) {
+		lines = append(lines, m.inspektBar(width-4, alt, i))
 	}
 	if len(m.inspektSplits) > 0 {
 		last := m.inspektSplits[len(m.inspektSplits)-1]
@@ -124,85 +124,6 @@ func (m model) inspektPlaybackLegend() string {
 	)
 }
 
-func (m model) dieRollTag() string {
-	if !m.dieRollActive() {
-		return ""
-	}
-	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0D0D12")).
-		Background(crushPink).
-		Bold(true).
-		Padding(0, 1).
-		Render("DIE ROLL")
-}
-
-func (m model) dieRollState() string {
-	if !m.inspektMode || !m.playback.enabled {
-		return ""
-	}
-	label := "die off"
-	style := lipgloss.NewStyle().Foreground(muted)
-	if m.inspektDieRoll {
-		label = "die on"
-		style = lipgloss.NewStyle().Foreground(crushPink).Bold(true)
-	}
-	return style.Render(label)
-}
-
-func (m model) showDieRoll(width int) bool {
-	return width >= 18 && m.dieRollActive()
-}
-
-func (m model) dieRollActive() bool {
-	if !m.inspektMode || !m.inspektDieRoll {
-		return false
-	}
-	_, ok := dieRollRank(m.inspektFrame)
-	return ok
-}
-
-func dieRollRank(frame llm.LogprobFrame) (int, bool) {
-	if frame.Token == "" || len(frame.Alternatives) == 0 {
-		return 0, false
-	}
-	if frame.Alternatives[0].Token == frame.Token {
-		return 1, false
-	}
-	for i, alt := range firstN(frame.Alternatives, 6) {
-		if alt.Token == frame.Token {
-			return i + 1, true
-		}
-	}
-	return 0, true
-}
-
-func (m model) dieRollView() []string {
-	rank, _ := dieRollRank(m.inspektFrame)
-	face := dieFace(rank)
-	lines := []string{m.styles.statusWarn.Render("sampled non-argmax")}
-	for _, line := range face {
-		lines = append(lines, lipgloss.NewStyle().Foreground(crushPink).Render(line))
-	}
-	return lines
-}
-
-func dieFace(rank int) []string {
-	switch rank {
-	case 2:
-		return []string{"┌─────┐", "│ •   │", "│     │", "│   • │", "└─────┘"}
-	case 3:
-		return []string{"┌─────┐", "│ •   │", "│  •  │", "│   • │", "└─────┘"}
-	case 4:
-		return []string{"┌─────┐", "│ • • │", "│     │", "│ • • │", "└─────┘"}
-	case 5:
-		return []string{"┌─────┐", "│ • • │", "│  •  │", "│ • • │", "└─────┘"}
-	case 6:
-		return []string{"┌─────┐", "│ • • │", "│ • • │", "│ • • │", "└─────┘"}
-	default:
-		return []string{"┌─────┐", "│ ? ? │", "│  ?  │", "│ ? ? │", "└─────┘"}
-	}
-}
-
 func inspektChatWidth(total int) int {
 	w := max(chatMinWidth, (total*62)/100)
 	reserved := inspektGapWidth + inspektPaneMinWidth + inspektPaneOverhead
@@ -214,20 +135,6 @@ func inspektChatWidth(total int) int {
 
 func inspektPaneWidth(total, chatWidth int) int {
 	return max(inspektPaneMinWidth, total-chatWidth-inspektGapWidth-inspektPaneOverhead)
-}
-
-func (m model) inspektBar(width int, alt llm.TokenProbability) string {
-	labelWidth := min(14, max(6, width/3))
-	barWidth := max(4, width-labelWidth-9)
-	fill := int((alt.Probability / 100) * float64(barWidth))
-	fill = min(barWidth, max(0, fill))
-	bar := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().Background(crushMint).Render(strings.Repeat(" ", fill)),
-		lipgloss.NewStyle().Background(border).Render(strings.Repeat(" ", barWidth-fill)),
-	)
-	label := lipgloss.NewStyle().Width(labelWidth).Foreground(ink).Render(trimToWidth(visibleToken(alt.Token), labelWidth))
-	return fmt.Sprintf("%s %s %5.1f%%", label, bar, alt.Probability)
 }
 
 func (m model) withInspektWeazl(lines []string, width, height int) string {

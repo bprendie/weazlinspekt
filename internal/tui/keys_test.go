@@ -145,6 +145,31 @@ func TestDieRollLayerCanBeDisabled(t *testing.T) {
 	}
 }
 
+func TestInspektBarsMarkSelectedAndTopTokens(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.inspektFrame = llm.LogprobFrame{
+		Token: "Schedule",
+		Alternatives: []llm.TokenProbability{
+			{Token: "Make", Probability: 36.2},
+			{Token: "Schedule", Probability: 27.8},
+		},
+	}
+	top := m.inspektBar(30, m.inspektFrame.Alternatives[0], 0)
+	selected := m.inspektBar(30, m.inspektFrame.Alternatives[1], 1)
+	if !strings.Contains(top, "★") || strings.Contains(top, "▶") {
+		t.Fatalf("top bar marker = %q, want top-only star", top)
+	}
+	if !strings.Contains(selected, "▶") || strings.Contains(selected, "★") {
+		t.Fatalf("selected bar marker = %q, want selected-only arrow", selected)
+	}
+
+	m.inspektFrame.Token = "Make"
+	both := m.inspektBar(30, m.inspektFrame.Alternatives[0], 0)
+	if !strings.Contains(both, "▶") || !strings.Contains(both, "★") {
+		t.Fatalf("argmax selected marker = %q, want arrow and star", both)
+	}
+}
+
 func TestWeazlArtScalesAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)

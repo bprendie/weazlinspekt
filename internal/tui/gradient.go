@@ -15,9 +15,9 @@ type rgb struct {
 }
 
 var logoStops = []rgb{
-	hexRGB(0xFF5FA2),
-	hexRGB(0xD75DFF),
-	hexRGB(0x7D56F4),
+	hexRGB(0xC8FF5F),
+	hexRGB(0x04B575),
+	hexRGB(0x00F5A0),
 }
 
 func renderLogo(s string, width int) string {
@@ -27,7 +27,7 @@ func renderLogo(s string, width int) string {
 		return wordmark
 	}
 
-	fieldStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F3E600")).Bold(true)
+	fieldStyle := lipgloss.NewStyle().Foreground(crushPink).Bold(true)
 	leftWidth := 6
 	gapWidth := 1
 	rightWidth := max(4, width-logoWidth-leftWidth-(gapWidth*2))

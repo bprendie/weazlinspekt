@@ -1,6 +1,48 @@
 # WeazlInspekt
 
-WeazlInspekt is a private, local-first AI chat TUI with a real-time logit inspector for vLLM and Ollama servers. It keeps the zero-bloat terminal workflow, but adds an Inspektor split view that exposes token probabilities as the model generates text. No wisdom theater, no web wrappers, just your model and its probability distribution.
+![WeazlInspekt screenshot](weazlinspekt.png)
+
+WeazlInspekt is the diagnostic, bare-metal overlay for local LLM work. Think of it as an X-ray machine for the latent space.
+
+It is a straightforward, distraction-free terminal interface for interacting with local models, but with an Inspektor pane that shows exactly what those models are doing as they generate text. There is no magic in the machine. There are only probability distributions. WeazlInspekt splits your terminal to visualize that reality in real time.
+
+## The Philosophy
+
+When you spend hours interacting with an aligned LLM, it is easy to anthropomorphize the output. The model generates a profound statement, and the human brain naturally assumes the machine possesses a worldview or an understanding of consequence.
+
+WeazlInspekt strips away the conversational wrapper and exposes the raw mathematical engine underneath. By intercepting `logprobs` from a local OpenAI-compatible vLLM endpoint, it visualizes the exact token-by-token probability math the model is executing. You do not see an entity making a decision; you see a statistical engine weighing vectors.
+
+## The Split View
+
+Press `ctrl+i` from inside the chat view to toggle Inspekt Mode. Your viewport immediately splits into a two-pane diagnostic layout:
+
+- Left pane, the Transcript: the normal message thread. During Inspekt playback, the currently active token is distinctly highlighted so your eyes can track the model's exact position in the sequence.
+- Right pane, the Inspektor: the real-time logit inspector. With every incoming SSE chunk, this pane updates to show the mathematical reality of the highlighted token. You get a stark, cyberpunk-styled bar chart showing the top 5 alternative tokens the model considered, converted dynamically from raw log probabilities into human-readable percentages: `P = e^logprob * 100`.
+
+## Hesitation Markers And Playback
+
+WeazlInspekt is not just a chart; it is a window into model entropy.
+
+LLMs are heavily fine-tuned to project high confidence. But when you ask a model an existential question, or force it into a logical corner, the math can fracture. WeazlInspekt visualizes this entropy using hesitation markers:
+
+- Solid green: the model is highly confident. Usually seen on structural syntax, common idioms, or obvious continuations.
+- Warning yellow and alert magenta: the model is mathematically torn. The probabilities split into contested distributions, drawing your eye to the exact moment a profound turn of phrase was actually a tight statistical coin toss.
+
+Want to analyze a generation closely? Inspekt Mode buffers the token stream into RAM and starts playback at `0.1x` so the stream is readable. Press `'` to cycle playback speed through `0.1x`, `0.5x`, `1.0x`, and step mode. Press `[` to step back one token and `]` to step forward one token. The transcript and Inspektor stay synchronized so the highlighted token and probability chart represent the same model state.
+
+## Immutable Vault Integration
+
+WeazlInspekt does not just show you the math; it records it.
+
+Because it uses AES-GCM encrypted SQLite vaults, WeazlInspekt extends the database schema to capture the highest-entropy logit splits during a conversation. When you save a workspace with `ctrl+s`, the Vault retains that mathematical hesitation. You can pull up a saved chat from three months ago and see exactly where the model's token predictions began to drift.
+
+## API Requirements
+
+WeazlInspekt requires an endpoint that supports streaming log probabilities for the full Inspektor experience.
+
+- vLLM: fully supported through the OpenAI-compatible `/v1/chat/completions` endpoint. WeazlInspekt sends `logprobs: true` and `top_logprobs: 5`, parses `choices[0].logprobs.content[0].top_logprobs`, and converts each raw log probability with `math.Exp(logprob) * 100`.
+- Ollama: chat and tool use are supported, but logprob visibility depends on the Ollama API and model exposing token probability metrics.
+- `top_p`: for the clearest visual results, use `top_p: 1.0` on your serving stack so the probability distribution is not truncated before it reaches the client.
 
 ## Defaults
 
@@ -123,6 +165,10 @@ Run setup first if you want the guided config flow:
 - `home` / `end`: jump to top or bottom of chat history
 - `ctrl+m`: toggle between copy mode and mouse scroll mode
 - `ctrl+i`: toggle Inspekt Mode
+- `tab`: toggle Inspekt Mode; many terminals send `ctrl+i` as Tab
+- `'`: cycle Inspekt playback through `0.1x`, `0.5x`, `1.0x`, and step mode
+- `[`: step Inspekt playback back one token
+- `]`: step Inspekt playback forward one token
 - `ctrl+n`: start a new session
 - `ctrl+r`: open workspace saves
 - `ctrl+d`: delete the selected workspace save from the picker
@@ -136,12 +182,14 @@ Run setup first if you want the guided config flow:
 
 ## Inspekt Mode
 
-Press `ctrl+i` in chat to split the TUI into two panes:
+Press `ctrl+i` or `tab` in chat to split the TUI into two panes:
 
-- Left pane, the Simulacrum: the normal message thread with Markdown rendered through Glamour.
+- Left pane, the Transcript: the normal message thread. During Inspekt playback, the active token is highlighted and persistent hesitation markers remain visible throughout the session.
 - Right pane, the Inspektor: the current generated token plus a top-5 probability bar chart.
 
 For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `top_logprobs: 5` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
+
+In Inspekt Mode, prompts are stateless by design. The current prompt is sent without prior session context so old conversation history does not poison the probability demonstration.
 
 The vault stores high-entropy token splits in `messages.logit_splits` whenever the top two alternatives are less than 10 percentage points apart. That makes later SQLite queries useful without saving every routine token choice.
 

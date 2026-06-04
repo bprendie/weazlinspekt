@@ -33,6 +33,27 @@ func TestTabTogglesInspektMode(t *testing.T) {
 	}
 }
 
+func TestPlaybackKeysAreInspektorOnly(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.mode = modeChat
+	if _, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("'")}); handled {
+		t.Fatal("playback key should not be handled outside Inspektor mode")
+	}
+
+	m.inspektMode = true
+	m.playback = newPlaybackState(true)
+	m.appendPlayback("a", nil)
+	m.appendPlayback("b", nil)
+	updated, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("]")})
+	if !handled {
+		t.Fatal("step forward key was not handled in Inspektor mode")
+	}
+	next := updated.(model)
+	if next.playback.cursor != 1 || next.streamText != "ab" {
+		t.Fatalf("cursor/text = %d/%q, want 1/ab", next.playback.cursor, next.streamText)
+	}
+}
+
 func TestWeazlArtKeepsSizeAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)

@@ -77,7 +77,13 @@ func (m *model) renderMessages() {
 		if m.streamText == "" {
 			b.WriteString(m.thinkingView())
 		} else {
-			b.WriteString(wrapText(m.streamText, m.viewport.Width))
+			streamText := m.streamText
+			if m.playback.enabled {
+				streamText = m.playbackText(true)
+				b.WriteString(streamText)
+			} else {
+				b.WriteString(wrapText(streamText, m.viewport.Width))
+			}
 		}
 		b.WriteString("\n\n")
 	}

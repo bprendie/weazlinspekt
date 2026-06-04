@@ -52,6 +52,91 @@ No view should independently accumulate text once playback mode exists.
 
 Decision: if the user steps back 15 tokens, the chat pane rolls back 15 tokens too. The Inspektor pane shows the probability distribution for the active cursor position so the user can inspect what the model was about to emit next.
 
+## Presentation Argument
+
+The talk goal is not just to show that logits exist. It is to make the audience feel the gap between "wisdom" language and the mechanical probability choices underneath the text.
+
+### Active Token Highlight
+
+Decision: playback should visibly highlight the active token in the left pane.
+
+At cursor `N`, the assistant transcript should render tokens before `N` normally, token `N` with a distinct highlighted style, and tokens after `N` hidden unless the user steps or plays forward.
+
+Impact:
+
+- The audience can connect the exact visible word/token to the Inspektor distribution.
+- Step mode becomes a left-to-right model autopsy instead of a normal transcript plus a detached chart.
+- When playback pauses on a high-entropy point, the highlighted token tells the audience where to look in the sentence.
+
+### Entropy And Margin Warnings
+
+Decision: Inspektor should visually distinguish low-certainty token choices.
+
+Useful metrics:
+
+- `confidence`: top token probability
+- `gap`: top1 probability minus top2 probability
+- optional `entropy`: Shannon entropy across the visible top alternatives
+
+Recommended first trigger:
+
+- Normal: top1 is confident and gap is wide
+- Warning: top1 probability below roughly `65%`
+- Coin flip: top1/top2 gap below roughly `10%`
+
+The narrow-margin trigger is more rhetorically useful than top1 confidence alone. A `52/48` split between two semantic alternatives is a clearer rebuttal to "machine wisdom" than a syntactically constrained `99.9%` punctuation token.
+
+Visual language:
+
+- Normal token: green/mint
+- Low confidence: gold/yellow
+- Near tie: pink/red
+- Inspektor pane should show a short label such as `gap 3.2%` or `coinflip`
+
+### Hesitation Markers In Transcript
+
+Decision: the transcript should reflect hesitation, not only the Inspektor chart.
+
+Candidate behavior:
+
+- Current active token gets a cursor/highlight style.
+- If the active token has low confidence, the highlight shifts to warning gold.
+- If the active token is a near tie, the highlight shifts to alert pink/red.
+- Previously generated high-entropy tokens may retain a subtle marker or underline so the transcript shows where the model hesitated.
+
+Impact:
+
+- The left pane itself becomes evidence.
+- The audience can scan the sentence and see where probability, not understanding, drove meaningful turns.
+
+### Parser Confidence
+
+The vLLM chat-completions logprob schema is already the target parser shape:
+
+```json
+{
+  "choices": [
+    {
+      "delta": {"content": ".town"},
+      "logprobs": {
+        "content": [
+          {
+            "token": ".town",
+            "logprob": -0.0001,
+            "top_logprobs": [
+              {"token": ".town", "logprob": -0.0001},
+              {"token": ".village", "logprob": -5.321}
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Decision: add a fixture test for this exact schema during implementation. The parser already handles this shape today, but a dedicated fixture gives us confidence that future playback changes do not break vLLM logprob parsing.
+
 ## Data Shape
 
 Candidate in-memory event:

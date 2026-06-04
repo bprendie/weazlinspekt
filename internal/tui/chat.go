@@ -113,13 +113,14 @@ func (m model) handleEnter() (tea.Model, tea.Cmd) {
 		m.streamAt = time.Now()
 		m.inspektFrame = llm.LogprobFrame{}
 		m.inspektSplits = nil
+		m.resetPlayback()
 		m.reqIn = estimateMessages(contextHistory) + estimateTokens(prompt)
 		m.reqOut = 0
 		m.err = ""
 		m.status = "streaming"
 		ch := make(chan streamEvent, 64)
 		m.stream = ch
-		return m, tea.Batch(m.startStream(ch, prompt, contextHistory), waitStream(ch), m.working.Tick)
+		return m, tea.Batch(m.startStream(ch, prompt, contextHistory), waitStream(ch), m.working.Tick, playbackTick())
 	}
 	return m, nil
 }
@@ -184,6 +185,7 @@ func (m model) confirmClearContext() (tea.Model, tea.Cmd) {
 	m.streamText = ""
 	m.inspektFrame = llm.LogprobFrame{}
 	m.inspektSplits = nil
+	m.playback = playbackState{}
 	m.reqIn = 0
 	m.reqOut = 0
 	m.session.InputTokens = 0

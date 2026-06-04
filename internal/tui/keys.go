@@ -40,6 +40,21 @@ func (m model) handleGlobalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 			updated, cmd := m.toggleInspektMode()
 			return updated, cmd, true
 		}
+	case "'":
+		if m.mode == modeChat && m.inspektMode {
+			updated, cmd := m.togglePlayback()
+			return updated, cmd, true
+		}
+	case "[":
+		if m.mode == modeChat && m.inspektMode {
+			updated, cmd := m.stepPlayback(-1)
+			return updated, cmd, true
+		}
+	case "]":
+		if m.mode == modeChat && m.inspektMode {
+			updated, cmd := m.stepPlayback(1)
+			return updated, cmd, true
+		}
 	case "ctrl+l":
 		if m.mode == modeChat && !m.thinking {
 			updated, cmd := m.startLLMConfig()

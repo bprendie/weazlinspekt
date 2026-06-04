@@ -35,6 +35,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case streamEvent:
 		return m.handleStreamEvent(msg)
+	case playbackTickMsg:
+		return m.handlePlaybackTick()
 	case contextTrimMsg:
 		return m.handleContextTrimMsg(msg)
 	case llmModelsMsg:

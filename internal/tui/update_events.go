@@ -14,8 +14,7 @@ import (
 
 func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 	if msg.eventType == "content" && msg.chunk != "" {
-		m.streamText += msg.chunk
-		m.reqOut = estimateTokens(m.streamText)
+		m.appendPlayback(msg.chunk, msg.logprobs)
 		m.renderMessages()
 	}
 	if msg.eventType == "logprobs" && len(msg.logprobs) > 0 {
@@ -39,6 +38,9 @@ func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 		m.status = "request failed"
 		m.renderMessages()
 		return m, nil
+	}
+	if m.playback.enabled {
+		m.streamText = m.playbackFullText()
 	}
 	inputTokens := msg.usage.InputTokens
 	outputTokens := msg.usage.OutputTokens
@@ -79,6 +81,7 @@ func (m model) handleStreamEvent(msg streamEvent) (tea.Model, tea.Cmd) {
 	m.toolResults = nil
 	m.inspektSplits = nil
 	m.inspektFrame = llm.LogprobFrame{}
+	m.playback = playbackState{}
 	m.reqIn = 0
 	m.reqOut = 0
 	m.renderMessages()
@@ -113,6 +116,7 @@ func (m model) resumeAfterAutoTrim(msg contextTrimMsg) (tea.Model, tea.Cmd) {
 	m.streamAt = time.Now()
 	m.inspektFrame = llm.LogprobFrame{}
 	m.inspektSplits = nil
+	m.resetPlayback()
 	m.reqIn = m.contextTokenEstimate()
 	m.reqOut = 0
 	ch := make(chan streamEvent, 64)
@@ -124,7 +128,7 @@ func (m model) resumeAfterAutoTrim(msg contextTrimMsg) (tea.Model, tea.Cmd) {
 		m.status = "request failed"
 		return m, nil
 	}
-	return m, tea.Batch(m.startStream(ch, msg.prompt, history), waitStream(ch), m.working.Tick)
+	return m, tea.Batch(m.startStream(ch, msg.prompt, history), waitStream(ch), m.working.Tick, playbackTick())
 }
 
 func (m model) handlePreviousSessionMsg(msg previousSessionMsg) (tea.Model, tea.Cmd) {

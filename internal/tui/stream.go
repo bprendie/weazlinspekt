@@ -27,7 +27,7 @@ func (m model) startStream(ch chan<- streamEvent, prompt string, history []stora
 			usage, err := client.Stream(context.Background(), history, prompt, func(event llm.StreamEvent) {
 				switch event.Type {
 				case "content":
-					ch <- streamEvent{eventType: "content", chunk: event.Content}
+					ch <- streamEvent{eventType: "content", chunk: event.Content, logprobs: event.Logprobs}
 				case "logprobs":
 					ch <- streamEvent{eventType: "logprobs", logprobs: event.Logprobs}
 				case "tool_call":

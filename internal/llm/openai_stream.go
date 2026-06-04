@@ -11,11 +11,11 @@ import (
 
 func (c Client) streamOpenAICompat(ctx context.Context, messages []ChatMessage, onEvent func(StreamEvent)) (Usage, error) {
 	reqBody := map[string]any{
-		"model":       c.provider.Model,
-		"messages":    messages,
-		"temperature": 0.7,
-		"stream":      true,
-		"logprobs":    true,
+		"model":        c.provider.Model,
+		"messages":     messages,
+		"temperature":  0.7,
+		"stream":       true,
+		"logprobs":     true,
 		"top_logprobs": 5,
 		"stream_options": map[string]any{
 			"include_usage": true,
@@ -62,11 +62,9 @@ func (c Client) streamOpenAICompat(ctx context.Context, messages []ChatMessage, 
 			usage.OutputTokens = chunk.Usage.CompletionTokens
 		}
 		for _, choice := range chunk.Choices {
-			if choice.Delta.Content != "" {
-				onEvent(StreamEvent{Type: "content", Content: choice.Delta.Content})
-			}
-			if frames := choice.Logprobs.frames(); len(frames) > 0 {
-				onEvent(StreamEvent{Type: "logprobs", Logprobs: frames})
+			frames := choice.Logprobs.frames()
+			if choice.Delta.Content != "" || len(frames) > 0 {
+				onEvent(StreamEvent{Type: "content", Content: choice.Delta.Content, Logprobs: frames})
 			}
 			for _, tc := range choice.Delta.ToolCalls {
 				if _, exists := toolCallsMap[tc.Index]; !exists {

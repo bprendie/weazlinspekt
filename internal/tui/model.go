@@ -72,6 +72,7 @@ type model struct {
 	streamAt            time.Time
 	inspektFrame        llm.LogprobFrame
 	inspektSplits       []inspektSplit
+	playback            playbackState
 	reqIn               int
 	reqOut              int
 	pasteText           string

@@ -71,3 +71,32 @@ func TestPlaybackKeepsHesitationMarkers(t *testing.T) {
 		t.Fatalf("playback text missing tokens: %q", out)
 	}
 }
+
+func TestPlaybackViewTextWrapsStyledTokens(t *testing.T) {
+	m := model{playback: newPlaybackState(true)}
+	m.viewport.Width = 10
+	m.appendPlayback("maybe", []llm.LogprobFrame{{
+		Token: "maybe",
+		Alternatives: []llm.TokenProbability{
+			{Token: "maybe", Probability: 51},
+			{Token: "perhaps", Probability: 49},
+		},
+	}})
+	m.appendPlayback(" impossible", []llm.LogprobFrame{{
+		Token: " impossible",
+		Alternatives: []llm.TokenProbability{
+			{Token: " impossible", Probability: 99},
+		},
+	}})
+	m.advancePlayback()
+
+	out := m.playbackViewText()
+	if !strings.Contains(out, "\n") {
+		t.Fatalf("playbackViewText did not wrap: %q", out)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if got := lipgloss.Width(line); got > m.viewport.Width {
+			t.Fatalf("line width = %d, want <= %d for %q", got, m.viewport.Width, line)
+		}
+	}
+}

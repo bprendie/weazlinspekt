@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
 
@@ -61,6 +62,42 @@ func wrapLine(s string, width int) string {
 			out.WriteRune(r)
 			lineWidth += rw
 		}
+	}
+	return out.String()
+}
+
+func wrapANSIText(s string, width int) string {
+	width = max(10, width)
+	var out strings.Builder
+	lineWidth := 0
+	for i := 0; i < len(s); {
+		if s[i] == '\x1b' {
+			end := i + 1
+			for end < len(s) && s[end] != 'm' {
+				end++
+			}
+			if end < len(s) {
+				end++
+			}
+			out.WriteString(s[i:end])
+			i = end
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == '\n' {
+			out.WriteRune(r)
+			lineWidth = 0
+			i += size
+			continue
+		}
+		rw := lipgloss.Width(string(r))
+		if lineWidth > 0 && lineWidth+rw > width {
+			out.WriteByte('\n')
+			lineWidth = 0
+		}
+		out.WriteRune(r)
+		lineWidth += rw
+		i += size
 	}
 	return out.String()
 }

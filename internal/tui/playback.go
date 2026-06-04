@@ -131,6 +131,10 @@ func (m model) playbackText(highlight bool) string {
 	return b.String()
 }
 
+func (m model) playbackViewText() string {
+	return wrapANSIText(m.playbackText(true), m.viewport.Width)
+}
+
 func (m model) playbackFullText() string {
 	if !m.playback.enabled {
 		return m.streamText

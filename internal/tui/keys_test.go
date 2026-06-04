@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/bprendie/weazlinspekt/internal/config"
+	"github.com/bprendie/weazlinspekt/internal/llm"
 )
 
 func TestTabTogglesInspektMode(t *testing.T) {
@@ -67,6 +68,66 @@ func TestInspektPlaybackLegendShowsStepAndSpeedKeys(t *testing.T) {
 	}
 	if lipgloss.Width(legend) != len("[ ] step ' speed") {
 		t.Fatalf("legend width = %d, want %d", lipgloss.Width(legend), len("[ ] step ' speed"))
+	}
+}
+
+func TestDieRollToggleIsInspektorOnly(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.mode = modeChat
+	m.inspektDieRoll = true
+	if _, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyCtrlG}); handled {
+		t.Fatal("die roll toggle should not be handled outside Inspektor mode")
+	}
+
+	m.inspektMode = true
+	updated, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyCtrlG})
+	if !handled {
+		t.Fatal("die roll toggle was not handled in Inspektor mode")
+	}
+	next := updated.(model)
+	if next.inspektDieRoll {
+		t.Fatal("die roll should be disabled after toggle")
+	}
+}
+
+func TestDieRollRankDetectsNonArgmax(t *testing.T) {
+	frame := llm.LogprobFrame{
+		Token: "Schedule",
+		Alternatives: []llm.TokenProbability{
+			{Token: "Make", Probability: 36.2},
+			{Token: "Schedule", Probability: 27.8},
+			{Token: "Plan", Probability: 7.1},
+		},
+	}
+	rank, ok := dieRollRank(frame)
+	if !ok || rank != 2 {
+		t.Fatalf("rank/ok = %d/%v, want 2/true", rank, ok)
+	}
+
+	frame.Token = "Make"
+	rank, ok = dieRollRank(frame)
+	if ok || rank != 1 {
+		t.Fatalf("argmax rank/ok = %d/%v, want 1/false", rank, ok)
+	}
+}
+
+func TestDieRollLayerCanBeDisabled(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.inspektMode = true
+	m.inspektDieRoll = true
+	m.inspektFrame = llm.LogprobFrame{
+		Token: "Schedule",
+		Alternatives: []llm.TokenProbability{
+			{Token: "Make", Probability: 36.2},
+			{Token: "Schedule", Probability: 27.8},
+		},
+	}
+	if !m.dieRollActive() {
+		t.Fatal("die roll should be active for non-argmax token")
+	}
+	m.inspektDieRoll = false
+	if m.dieRollActive() || m.dieRollTag() != "" {
+		t.Fatal("die roll should be hidden when disabled")
 	}
 }
 

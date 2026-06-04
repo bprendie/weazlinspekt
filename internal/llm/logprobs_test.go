@@ -1,8 +1,13 @@
 package llm
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/bprendie/weazlinspekt/internal/config"
 )
 
 func TestOpenAIChatCompletionLogprobsFixture(t *testing.T) {
@@ -44,5 +49,28 @@ func TestOpenAIChatCompletionLogprobsFixture(t *testing.T) {
 	}
 	if frames[0].Alternatives[0].Probability <= 99 {
 		t.Fatalf("top probability = %.4f, want near certain", frames[0].Alternatives[0].Probability)
+	}
+}
+
+func TestOpenAIStreamRequestsTopSixLogprobs(t *testing.T) {
+	var requestBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/chat/completions" {
+			t.Fatalf("path = %s, want /v1/chat/completions", r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			t.Fatalf("Decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	client := New(config.Provider{Type: "vllm", ServerURL: server.URL, Model: "test-model"})
+	if _, err := client.streamOpenAICompat(context.Background(), []ChatMessage{{Role: "user", Content: "hello"}}, func(StreamEvent) {}); err != nil {
+		t.Fatalf("streamOpenAICompat: %v", err)
+	}
+	if got := requestBody["top_logprobs"]; got != float64(topLogprobs) {
+		t.Fatalf("top_logprobs = %#v, want %d", got, topLogprobs)
 	}
 }

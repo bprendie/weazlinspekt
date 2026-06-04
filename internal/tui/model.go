@@ -67,6 +67,7 @@ type model struct {
 	trimming            bool
 	mouseScroll         bool
 	inspektMode         bool
+	inspektDieRoll      bool
 	stream              <-chan streamEvent
 	streamText          string
 	streamAt            time.Time
@@ -147,21 +148,22 @@ func New(cfg config.Config, cfgPath string, store *storage.Store, toolRegistry *
 	contextBar.EmptyColor = string(border)
 
 	return model{
-		cfg:          cfg,
-		cfgPath:      cfgPath,
-		store:        store,
-		toolRegistry: toolRegistry,
-		styles:       s,
-		mode:         modeVault,
-		input:        ti,
-		viewport:     viewport.New(0, 0),
-		markdown:     markdownRenderer{enabled: cfg.UI.MarkdownEnabled(), style: cfg.UI.MarkdownStyle},
-		sessions:     sessions,
-		workspaces:   workspaces,
-		working:      working,
-		contextBar:   contextBar,
-		mouseScroll:  true,
-		status:       "private local chat",
+		cfg:            cfg,
+		cfgPath:        cfgPath,
+		store:          store,
+		toolRegistry:   toolRegistry,
+		styles:         s,
+		mode:           modeVault,
+		input:          ti,
+		viewport:       viewport.New(0, 0),
+		markdown:       markdownRenderer{enabled: cfg.UI.MarkdownEnabled(), style: cfg.UI.MarkdownStyle},
+		sessions:       sessions,
+		workspaces:     workspaces,
+		working:        working,
+		contextBar:     contextBar,
+		mouseScroll:    true,
+		inspektDieRoll: true,
+		status:         "private local chat",
 	}
 }
 

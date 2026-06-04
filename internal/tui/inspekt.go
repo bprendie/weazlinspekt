@@ -80,11 +80,18 @@ func (m model) inspektView(width, height int) string {
 	if legend := m.inspektPlaybackLegend(); legend != "" {
 		title += " " + legend
 	}
+	if tag := m.dieRollTag(); tag != "" {
+		title += " " + tag
+	}
 	token := m.styles.statusLabel.Render("token") + " " + m.styles.statusValue.Render(visibleToken(m.inspektFrame.Token))
 	if len(m.inspektFrame.Alternatives) == 0 {
 		token = m.styles.help.Render("waiting for logprobs")
 	}
 	lines := []string{title, token, ""}
+	if m.showDieRoll(innerWidth) {
+		lines = append(lines, m.dieRollView()...)
+		lines = append(lines, "")
+	}
 	for _, alt := range firstN(m.inspektFrame.Alternatives, 5) {
 		lines = append(lines, m.inspektBar(width-4, alt))
 	}
@@ -112,6 +119,72 @@ func (m model) inspektPlaybackLegend() string {
 		keyStyle.Render("'"),
 		m.styles.help.Render(" speed"),
 	)
+}
+
+func (m model) dieRollTag() string {
+	if !m.dieRollActive() {
+		return ""
+	}
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#0D0D12")).
+		Background(crushPink).
+		Bold(true).
+		Padding(0, 1).
+		Render("DIE ROLL")
+}
+
+func (m model) showDieRoll(width int) bool {
+	return width >= 18 && m.dieRollActive()
+}
+
+func (m model) dieRollActive() bool {
+	if !m.inspektMode || !m.inspektDieRoll {
+		return false
+	}
+	_, ok := dieRollRank(m.inspektFrame)
+	return ok
+}
+
+func dieRollRank(frame llm.LogprobFrame) (int, bool) {
+	if frame.Token == "" || len(frame.Alternatives) == 0 {
+		return 0, false
+	}
+	if frame.Alternatives[0].Token == frame.Token {
+		return 1, false
+	}
+	for i, alt := range firstN(frame.Alternatives, 6) {
+		if alt.Token == frame.Token {
+			return i + 1, true
+		}
+	}
+	return 0, true
+}
+
+func (m model) dieRollView() []string {
+	rank, _ := dieRollRank(m.inspektFrame)
+	face := dieFace(rank)
+	lines := []string{m.styles.statusWarn.Render("sampled non-argmax")}
+	for _, line := range face {
+		lines = append(lines, lipgloss.NewStyle().Foreground(crushPink).Render(line))
+	}
+	return lines
+}
+
+func dieFace(rank int) []string {
+	switch rank {
+	case 2:
+		return []string{"┌─────┐", "│ •   │", "│     │", "│   • │", "└─────┘"}
+	case 3:
+		return []string{"┌─────┐", "│ •   │", "│  •  │", "│   • │", "└─────┘"}
+	case 4:
+		return []string{"┌─────┐", "│ • • │", "│     │", "│ • • │", "└─────┘"}
+	case 5:
+		return []string{"┌─────┐", "│ • • │", "│  •  │", "│ • • │", "└─────┘"}
+	case 6:
+		return []string{"┌─────┐", "│ • • │", "│ • • │", "│ • • │", "└─────┘"}
+	default:
+		return []string{"┌─────┐", "│ ? ? │", "│  ?  │", "│ ? ? │", "└─────┘"}
+	}
 }
 
 func inspektChatWidth(total int) int {

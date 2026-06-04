@@ -55,6 +55,17 @@ func (m model) handleGlobalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 			updated, cmd := m.stepPlayback(1)
 			return updated, cmd, true
 		}
+	case "ctrl+g":
+		if m.mode == modeChat && m.inspektMode {
+			m.inspektDieRoll = !m.inspektDieRoll
+			if m.inspektDieRoll {
+				m.status = "die roll on"
+			} else {
+				m.status = "die roll off"
+			}
+			m.renderMessages()
+			return m, nil, true
+		}
 	case "ctrl+l":
 		if m.mode == modeChat && !m.thinking {
 			updated, cmd := m.startLLMConfig()

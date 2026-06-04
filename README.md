@@ -17,7 +17,7 @@ WeazlInspekt strips away the conversational wrapper and exposes the raw mathemat
 Press `ctrl+i` from inside the chat view to toggle Inspekt Mode. Your viewport immediately splits into a two-pane diagnostic layout:
 
 - Left pane, the Transcript: the normal message thread. During Inspekt playback, the currently active token is distinctly highlighted so your eyes can track the model's exact position in the sequence.
-- Right pane, the Inspektor: the real-time logit inspector. With every incoming SSE chunk, this pane updates to show the mathematical reality of the highlighted token. You get a stark, cyberpunk-styled bar chart showing the top 5 alternative tokens the model considered, converted dynamically from raw log probabilities into human-readable percentages: `P = e^logprob * 100`.
+- Right pane, the Inspektor: the real-time logit inspector. With every incoming SSE chunk, this pane updates to show the mathematical reality of the highlighted token. You get a stark, cyberpunk-styled bar chart showing the top alternatives the model considered, converted dynamically from raw log probabilities into human-readable percentages: `P = e^logprob * 100`.
 
 ## Hesitation Markers And Playback
 
@@ -40,7 +40,7 @@ Because it uses AES-GCM encrypted SQLite vaults, WeazlInspekt extends the databa
 
 WeazlInspekt requires an endpoint that supports streaming log probabilities for the full Inspektor experience.
 
-- vLLM: fully supported through the OpenAI-compatible `/v1/chat/completions` endpoint. WeazlInspekt sends `logprobs: true` and `top_logprobs: 5`, parses `choices[0].logprobs.content[0].top_logprobs`, and converts each raw log probability with `math.Exp(logprob) * 100`.
+- vLLM: fully supported through the OpenAI-compatible `/v1/chat/completions` endpoint. WeazlInspekt sends `logprobs: true` and `top_logprobs: 6`, parses `choices[0].logprobs.content[0].top_logprobs`, and converts each raw log probability with `math.Exp(logprob) * 100`.
 - Ollama: chat and tool use are supported, but logprob visibility depends on the Ollama API and model exposing token probability metrics.
 - `top_p`: for the clearest visual results, use `top_p: 1.0` on your serving stack so the probability distribution is not truncated before it reaches the client.
 
@@ -169,6 +169,7 @@ Run setup first if you want the guided config flow:
 - `'`: cycle Inspekt playback through `0.1x`, `0.5x`, `1.0x`, and step mode
 - `[`: step Inspekt playback back one token
 - `]`: step Inspekt playback forward one token
+- `ctrl+g`: toggle the Inspekt die-roll indicator
 - `ctrl+n`: start a new session
 - `ctrl+r`: open workspace saves
 - `ctrl+d`: delete the selected workspace save from the picker
@@ -185,9 +186,9 @@ Run setup first if you want the guided config flow:
 Press `ctrl+i` or `tab` in chat to split the TUI into two panes:
 
 - Left pane, the Transcript: the normal message thread. During Inspekt playback, the active token is highlighted and persistent hesitation markers remain visible throughout the session.
-- Right pane, the Inspektor: the current generated token plus a top-5 probability bar chart.
+- Right pane, the Inspektor: the current generated token plus a top-5 probability bar chart backed by a top-6 logprob capture for die-roll detection.
 
-For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `top_logprobs: 5` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
+For vLLM/OpenAI-compatible streaming, WeazlInspekt sends `logprobs: true` and `top_logprobs: 6` with chat completion requests. Each incoming log probability is converted with `math.Exp(logprob) * 100` and displayed immediately through BubbleTea messages, keeping stream updates on the normal TUI event path.
 
 In Inspekt Mode, prompts are stateless by design. The current prompt is sent without prior session context so old conversation history does not poison the probability demonstration.
 

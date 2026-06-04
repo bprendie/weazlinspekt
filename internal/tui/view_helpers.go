@@ -128,7 +128,7 @@ func (m model) helpText() string {
 	}
 	inspektHelp := "ctrl+i inspekt"
 	if m.inspektMode {
-		inspektHelp = "ctrl+i chat"
+		inspektHelp = "ctrl+i chat | ctrl+g die"
 	}
 	return "enter send/select | wheel/pgup/pgdn scroll | " + mouseHelp + " | " + inspektHelp + " | ctrl+n new | ctrl+l llm | ctrl+t trim | ctrl+u clear | ctrl+r workspaces | ctrl+s save" + renameHelp + " | ctrl+c quit"
 }

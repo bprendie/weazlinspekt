@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const topLogprobs = 6
+
 func (c Client) streamOpenAICompat(ctx context.Context, messages []ChatMessage, onEvent func(StreamEvent)) (Usage, error) {
 	reqBody := map[string]any{
 		"model":        c.provider.Model,
@@ -16,7 +18,7 @@ func (c Client) streamOpenAICompat(ctx context.Context, messages []ChatMessage, 
 		"temperature":  0.7,
 		"stream":       true,
 		"logprobs":     true,
-		"top_logprobs": 5,
+		"top_logprobs": topLogprobs,
 		"stream_options": map[string]any{
 			"include_usage": true,
 		},

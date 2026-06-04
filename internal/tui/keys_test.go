@@ -54,14 +54,19 @@ func TestPlaybackKeysAreInspektorOnly(t *testing.T) {
 	}
 }
 
-func TestWeazlArtKeepsSizeAndColorizes(t *testing.T) {
+func TestWeazlArtScalesAndColorizes(t *testing.T) {
 	source := strings.Split(inspektWeazlArt, "\n")
 	clipped := clippedWeazl(200, 200)
-	if len(clipped) != len(source) {
-		t.Fatalf("clipped height = %d, want %d", len(clipped), len(source))
+	wantHeight := (len(source) + weazlArtScale - 1) / weazlArtScale
+	if len(clipped) != wantHeight {
+		t.Fatalf("clipped height = %d, want %d", len(clipped), wantHeight)
 	}
-	if lipgloss.Width(clipped[0].text) != lipgloss.Width(source[0]) {
-		t.Fatalf("clipped width = %d, want %d", lipgloss.Width(clipped[0].text), lipgloss.Width(source[0]))
+	wantWidth := (lipgloss.Width(source[0]) + weazlArtScale - 1) / weazlArtScale
+	if lipgloss.Width(clipped[0].text) != wantWidth {
+		t.Fatalf("clipped width = %d, want %d", lipgloss.Width(clipped[0].text), wantWidth)
+	}
+	if clipped[1].row != weazlArtScale {
+		t.Fatalf("second clipped source row = %d, want %d", clipped[1].row, weazlArtScale)
 	}
 
 	if fallbackWeazlRuneStyle('▓').GetForeground() == fallbackWeazlRuneStyle('▒').GetForeground() {
@@ -76,5 +81,19 @@ func TestWeazlArtKeepsSizeAndColorizes(t *testing.T) {
 	}
 	if weazlCellStyle(0, 0, '█').GetForeground() == fallbackWeazlRuneStyle('█').GetForeground() {
 		t.Fatal("PNG palette should override fallback glyph colors")
+	}
+}
+
+func TestInspektPaneWidthReservesRenderedColumns(t *testing.T) {
+	for _, total := range []int{48, 60, 80, 120} {
+		chatWidth := inspektChatWidth(total)
+		paneWidth := inspektPaneWidth(total, chatWidth)
+		rendered := chatWidth + inspektGapWidth + paneWidth + inspektPaneOverhead
+		if rendered > total {
+			t.Fatalf("split renders %d columns into %d", rendered, total)
+		}
+		if paneWidth < inspektPaneMinWidth {
+			t.Fatalf("pane width = %d, want >= %d", paneWidth, inspektPaneMinWidth)
+		}
 	}
 }

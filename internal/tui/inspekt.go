@@ -10,7 +10,14 @@ import (
 	"github.com/bprendie/weazlinspekt/internal/llm"
 )
 
-const inspektSplitThreshold = 10.0
+const (
+	inspektSplitThreshold = 10.0
+	weazlArtScale         = 2
+	inspektGapWidth       = 2
+	inspektPaneMinWidth   = 24
+	inspektPaneOverhead   = 2
+	chatMinWidth          = 20
+)
 
 type inspektSplit struct {
 	Token        string                 `json:"token"`
@@ -90,6 +97,19 @@ func (m model) inspektView(width, height int) string {
 		Render(content)
 }
 
+func inspektChatWidth(total int) int {
+	w := max(chatMinWidth, (total*62)/100)
+	reserved := inspektGapWidth + inspektPaneMinWidth + inspektPaneOverhead
+	if total >= chatMinWidth+reserved && w+reserved > total {
+		w = total - reserved
+	}
+	return w
+}
+
+func inspektPaneWidth(total, chatWidth int) int {
+	return max(inspektPaneMinWidth, total-chatWidth-inspektGapWidth-inspektPaneOverhead)
+}
+
 func (m model) inspektBar(width int, alt llm.TokenProbability) string {
 	labelWidth := min(14, max(6, width/3))
 	barWidth := max(4, width-labelWidth-9)
@@ -124,20 +144,19 @@ func (m model) withInspektWeazl(lines []string, width, height int) string {
 }
 
 func clippedWeazl(width, height int) []weazlArtLine {
-	source := strings.Split(inspektWeazlArt, "\n")
-	rowOffset := 0
+	source := scaledWeazlRows()
 	if len(source) > height {
-		rowOffset = len(source) - height
 		source = source[len(source)-height:]
 	}
 	out := make([]weazlArtLine, 0, len(source))
-	for i, line := range source {
-		line = strings.TrimRight(line, " ")
+	for _, line := range source {
+		text := strings.TrimRight(line.text, " ")
 		colOffset := 0
-		if lipgloss.Width(line) > width {
-			line, colOffset = rightRunes(line, width)
+		if lipgloss.Width(text) > width {
+			text, colOffset = rightRunes(text, width)
+			colOffset *= weazlArtScale
 		}
-		out = append(out, weazlArtLine{text: line, row: rowOffset + i, colOffset: colOffset})
+		out = append(out, weazlArtLine{text: text, row: line.row, colOffset: colOffset})
 	}
 	return out
 }
@@ -145,7 +164,27 @@ func clippedWeazl(width, height int) []weazlArtLine {
 func colorWeazlLine(line string, row, colOffset int) string {
 	var b strings.Builder
 	for col, r := range []rune(line) {
-		b.WriteString(weazlCellStyle(row, colOffset+col, r).Render(string(r)))
+		sourceCol := colOffset + (col * weazlArtScale)
+		b.WriteString(weazlCellStyle(row, sourceCol, r).Render(string(r)))
+	}
+	return b.String()
+}
+
+func scaledWeazlRows() []weazlArtLine {
+	source := strings.Split(inspektWeazlArt, "\n")
+	rows := make([]weazlArtLine, 0, (len(source)+weazlArtScale-1)/weazlArtScale)
+	for row := 0; row < len(source); row += weazlArtScale {
+		rows = append(rows, weazlArtLine{text: everyNthRune(source[row], weazlArtScale), row: row})
+	}
+	return rows
+}
+
+func everyNthRune(s string, n int) string {
+	var b strings.Builder
+	for i, r := range []rune(s) {
+		if i%n == 0 {
+			b.WriteRune(r)
+		}
 	}
 	return b.String()
 }

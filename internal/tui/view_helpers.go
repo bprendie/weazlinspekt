@@ -156,7 +156,7 @@ func (m *model) resize() {
 	w := max(20, m.width-6)
 	h := max(5, m.height-16)
 	if m.inspektMode {
-		w = max(20, (w*62)/100)
+		w = inspektChatWidth(w)
 	}
 	m.viewport.Width = w
 	m.viewport.Height = h

@@ -47,11 +47,11 @@ func (m model) View() string {
 		thread := m.viewport.View()
 		if m.inspektMode {
 			totalWidth := max(20, m.width-6)
-			rightWidth := max(24, totalWidth-m.viewport.Width-2)
+			rightWidth := inspektPaneWidth(totalWidth, m.viewport.Width)
 			thread = lipgloss.JoinHorizontal(
 				lipgloss.Top,
 				m.viewport.View(),
-				"  ",
+				strings.Repeat(" ", inspektGapWidth),
 				m.inspektView(rightWidth, m.viewport.Height),
 			)
 		}

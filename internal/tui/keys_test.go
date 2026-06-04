@@ -55,6 +55,24 @@ func TestPlaybackKeysAreInspektorOnly(t *testing.T) {
 	}
 }
 
+func TestCopyModeToggleUsesNonConflictingKey(t *testing.T) {
+	m := New(config.Default(), "", nil, nil).(model)
+	m.mode = modeChat
+	m.mouseScroll = true
+
+	updated, _, handled := m.handleGlobalKey(tea.KeyMsg{Type: tea.KeyCtrlO})
+	if !handled {
+		t.Fatal("ctrl+o copy toggle was not handled")
+	}
+	next := updated.(model)
+	if next.mouseScroll {
+		t.Fatal("ctrl+o should disable mouse capture for copy mode")
+	}
+	if help := next.helpView(); !strings.Contains(help, "ctrl+o mouse") {
+		t.Fatalf("help = %q, want ctrl+o mouse", help)
+	}
+}
+
 func TestInspektPlaybackLegendShowsStepAndSpeedKeys(t *testing.T) {
 	m := New(config.Default(), "", nil, nil).(model)
 	if legend := m.inspektPlaybackLegend(); legend != "" {

@@ -120,7 +120,7 @@ go build -o weazlinspekt-setup.exe ./cmd/weazlinspekt-setup
 
 - `enter`: blast message
 - `up` / `down`: recall history
-- `ctrl+m`: toggle mouse hijack vs terminal copy mode
+- `ctrl+o`: toggle mouse hijack vs terminal copy mode
 - `ctrl+i` / `tab`: split the TUI / toggle Inspekt Mode
 - `'`: cycle Inspekt playback speed
 - `[` / `]`: step Inspekt playback back/forward

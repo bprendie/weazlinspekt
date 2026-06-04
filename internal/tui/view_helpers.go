@@ -118,9 +118,9 @@ func (m model) helpText() string {
 	if m.mode == modeWorkspace {
 		return "enter replay | ctrl+e rename | ctrl+d delete | esc back | ctrl+c quit"
 	}
-	mouseHelp := "ctrl+m copy"
+	mouseHelp := "ctrl+o copy"
 	if !m.mouseScroll {
-		mouseHelp = "ctrl+m mouse"
+		mouseHelp = "ctrl+o mouse"
 	}
 	renameHelp := ""
 	if m.activeWorkspaceID != 0 {

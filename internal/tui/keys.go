@@ -30,7 +30,7 @@ func (m model) handleGlobalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
 			updated, cmd := m.startClearContextConfirm()
 			return updated, cmd, true
 		}
-	case "ctrl+m":
+	case "ctrl+o", "ctrl+m":
 		if m.mode == modeChat {
 			updated, cmd := m.toggleMouseMode()
 			return updated, cmd, true
